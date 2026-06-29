@@ -133,7 +133,7 @@ resource "aws_eks_node_group" "system_on_demand" {
     }
   )
 
-  taints {
+  taint {
     key    = var.system_taint_key
     value  = var.system_taint_value
     effect = var.system_taint_effect

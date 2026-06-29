@@ -1,0 +1,114 @@
+name: Infrastructure CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      layer:
+        description: 'Terraform layer to apply'
+        required: true
+        default: '00-networking'
+        type: choice
+        options:
+          - '00-networking'
+          - '01-kubernetes'
+          - '02-data'
+          - '03-storage'
+          - '04-observability'
+          - 'cloudflare'
+      action:
+        description: 'Terraform Action'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+jobs:
+  validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.0"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive infra/
+
+  # The Plan/Apply job runs ONLY when manually triggered via workflow_dispatch
+  # WARNING: To use this job, you MUST configure Remote State (S3 backend) in your provider.tf files!
+  deploy:
+    name: Terraform Deploy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    # Configure variables based on the selected layer
+    env:
+      TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
+      WORKING_DIR: ${{ github.event.inputs.layer == 'cloudflare' && 'infra/cloudflare' || format('infra/aws/terraform/layers/{0}', github.event.inputs.layer) }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.0"
+
+      - name: Configure AWS Credentials
+        if: github.event.inputs.layer != 'cloudflare'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          
+      - name: Setup Cloudflare Token
+        if: github.event.inputs.layer == 'cloudflare'
+        run: echo "TF_VAR_cloudflare_api_token=${{ secrets.CLOUDFRONT_API_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Terraform Init
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform init
+
+      - name: Terraform Plan
+        if: github.event.inputs.action == 'plan'
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform plan -var-file="${{ env.TF_VAR_FILE }}"
+
+      - name: Terraform Apply
+        if: github.event.inputs.action == 'apply'
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform apply -var-file="${{ env.TF_VAR_FILE }}" -auto-approve
+        
+      - name: Terraform Destroy
+        if: github.event.inputs.action == 'destroy'
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform destroy -var-file="${{ env.TF_VAR_FILE }}" -auto-approve

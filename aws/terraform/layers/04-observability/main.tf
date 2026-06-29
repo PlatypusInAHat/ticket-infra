@@ -23,10 +23,6 @@ module "monitoring" {
   log_retention_days = var.log_retention_days
   alert_email        = var.alert_email
 
-  eks_cpu_threshold           = var.eks_cpu_threshold
-  eks_memory_threshold        = var.eks_memory_threshold
-  alb_response_time_threshold = var.alb_response_time_threshold
-  error_rate_threshold        = var.error_rate_threshold
 
   tags = local.common_tags
 }

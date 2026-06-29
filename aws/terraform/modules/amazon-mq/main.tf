@@ -69,10 +69,8 @@ resource "aws_mq_broker" "rabbitmq" {
   dynamic "logs" {
     for_each = var.enable_cloudwatch_logs ? [1] : []
     content {
-      cloudwatch_logs {
-        enabled   = true
-        log_group = aws_cloudwatch_log_group.mq[0].name
-      }
+      general = true
+      audit   = false
     }
   }
 

@@ -145,7 +145,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   # Cache behavior for index.html (no caching)
-  cache_behavior {
+  ordered_cache_behavior {
     path_pattern           = var.index_path_pattern
     allowed_methods        = var.default_allowed_methods
     cached_methods         = var.default_cached_methods
@@ -167,7 +167,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   # Cache behavior for API calls (passthrough to ALB)
-  dynamic "cache_behavior" {
+  dynamic "ordered_cache_behavior" {
     for_each = var.enable_api_cache_behavior ? [1] : []
     content {
       path_pattern           = var.api_path_pattern

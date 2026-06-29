@@ -122,7 +122,7 @@ locals {
 
 resource "aws_secretsmanager_secret_policy" "policies" {
   for_each  = local.secrets_needing_policy
-  secret_id = each.value
+  secret_arn = each.value
 
   policy = jsonencode({
     Version = var.iam_policy_version

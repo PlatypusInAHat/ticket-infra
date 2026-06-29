@@ -31,29 +31,6 @@ variable "alert_email" {
   default     = ""
 }
 
-variable "eks_cpu_threshold" {
-  description = "EKS CPU threshold"
-  type        = number
-  default     = 80
-}
-
-variable "eks_memory_threshold" {
-  description = "EKS memory threshold"
-  type        = number
-  default     = 85
-}
-
-variable "alb_response_time_threshold" {
-  description = "ALB response time threshold"
-  type        = number
-  default     = 1
-}
-
-variable "error_rate_threshold" {
-  description = "Error rate threshold"
-  type        = number
-  default     = 50
-}
 
 variable "tags" {
   description = "Common tags"

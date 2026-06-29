@@ -21,7 +21,7 @@ module "vpc" {
   environment        = var.environment
   region             = var.aws_region
   vpc_cidr           = var.vpc_cidr
-  availability_zones = data.aws_availability_zones.available.names
+  availability_zones = slice(data.aws_availability_zones.available.names, 0, length(var.public_subnets))
   public_subnets     = var.public_subnets
   private_subnets    = var.private_subnets
 

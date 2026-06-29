@@ -72,7 +72,7 @@ resource "aws_cloudwatch_log_metric_filter" "log_filters" {
   for_each       = { for filter in var.log_metric_filters : filter.name => filter }
   name           = "${var.environment}-${each.value.name}"
   log_group_name = aws_cloudwatch_log_group.log_groups[each.value.log_group].name
-  filter_pattern = each.value.filter_pattern
+  pattern        = each.value.filter_pattern
 
   metric_transformation {
     name      = each.value.metric_name
