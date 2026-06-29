@@ -1,0 +1,7 @@
+cloudflare_api_token = "replace_me"
+cloudflare_zone_id   = "replace_me"
+aws_alb_hostname     = "k8s-ticketstage-api-xxxxxxxx.ap-southeast-1.elb.amazonaws.com"
+frontend_hostname    = "dxxxxxxxxxxxxx.cloudfront.net"
+api_record_name      = "api"
+web_record_name      = "www"
+security_level       = "medium"

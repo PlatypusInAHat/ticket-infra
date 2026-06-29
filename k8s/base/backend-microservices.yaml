@@ -1,0 +1,341 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: ticketstage
+  labels: &gatewayLabels
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/part-of: ticketstage
+spec:
+  replicas: 2
+  selector:
+    matchLabels: *gatewayLabels
+  template:
+    metadata:
+      labels: *gatewayLabels
+    spec:
+      containers:
+        - name: api-gateway
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          imagePullPolicy: IfNotPresent
+          command: ["npm", "run", "start:gateway"]
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: ticketstage-config
+            - secretRef:
+                name: ticketstage-secrets
+          env:
+            - name: GATEWAY_PORT
+              value: "5000"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: ticketstage
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: api-gateway
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: ticketstage
+  labels: &authLabels
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/part-of: ticketstage
+spec:
+  replicas: 2
+  selector:
+    matchLabels: *authLabels
+  template:
+    metadata:
+      labels: *authLabels
+    spec:
+      containers:
+        - name: auth-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          command: ["npm", "run", "start:auth-service"]
+          ports:
+            - containerPort: 5101
+          envFrom:
+            - configMapRef:
+                name: ticketstage-config
+            - secretRef:
+                name: ticketstage-secrets
+          env:
+            - name: AUTH_SERVICE_PORT
+              value: "5101"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5101
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5101
+            initialDelaySeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: ticketstage
+spec:
+  selector:
+    app.kubernetes.io/name: auth-service
+  ports:
+    - name: http
+      port: 5101
+      targetPort: 5101
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-service
+  namespace: ticketstage
+  labels: &catalogLabels
+    app.kubernetes.io/name: catalog-service
+    app.kubernetes.io/part-of: ticketstage
+spec:
+  replicas: 2
+  selector:
+    matchLabels: *catalogLabels
+  template:
+    metadata:
+      labels: *catalogLabels
+    spec:
+      containers:
+        - name: catalog-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          command: ["npm", "run", "start:catalog-service"]
+          ports:
+            - containerPort: 5102
+          envFrom:
+            - configMapRef:
+                name: ticketstage-config
+            - secretRef:
+                name: ticketstage-secrets
+          env:
+            - name: CATALOG_SERVICE_PORT
+              value: "5102"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5102
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5102
+            initialDelaySeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-service
+  namespace: ticketstage
+spec:
+  selector:
+    app.kubernetes.io/name: catalog-service
+  ports:
+    - name: http
+      port: 5102
+      targetPort: 5102
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booking-service
+  namespace: ticketstage
+  labels: &bookingLabels
+    app.kubernetes.io/name: booking-service
+    app.kubernetes.io/part-of: ticketstage
+spec:
+  replicas: 3
+  selector:
+    matchLabels: *bookingLabels
+  template:
+    metadata:
+      labels: *bookingLabels
+    spec:
+      containers:
+        - name: booking-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          command: ["npm", "run", "start:booking-service"]
+          ports:
+            - containerPort: 5103
+          envFrom:
+            - configMapRef:
+                name: ticketstage-config
+            - secretRef:
+                name: ticketstage-secrets
+          env:
+            - name: BOOKING_SERVICE_PORT
+              value: "5103"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5103
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5103
+            initialDelaySeconds: 30
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: booking-service
+  namespace: ticketstage
+spec:
+  selector:
+    app.kubernetes.io/name: booking-service
+  ports:
+    - name: http
+      port: 5103
+      targetPort: 5103
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkin-service
+  namespace: ticketstage
+  labels: &checkinLabels
+    app.kubernetes.io/name: checkin-service
+    app.kubernetes.io/part-of: ticketstage
+spec:
+  replicas: 2
+  selector:
+    matchLabels: *checkinLabels
+  template:
+    metadata:
+      labels: *checkinLabels
+    spec:
+      containers:
+        - name: checkin-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          command: ["npm", "run", "start:checkin-service"]
+          ports:
+            - containerPort: 5104
+          envFrom:
+            - configMapRef:
+                name: ticketstage-config
+            - secretRef:
+                name: ticketstage-secrets
+          env:
+            - name: CHECKIN_SERVICE_PORT
+              value: "5104"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5104
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5104
+            initialDelaySeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkin-service
+  namespace: ticketstage
+spec:
+  selector:
+    app.kubernetes.io/name: checkin-service
+  ports:
+    - name: http
+      port: 5104
+      targetPort: 5104
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: ticketstage
+  labels: &notificationLabels
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/part-of: ticketstage
+spec:
+  replicas: 1
+  selector:
+    matchLabels: *notificationLabels
+  template:
+    metadata:
+      labels: *notificationLabels
+    spec:
+      containers:
+        - name: notification-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          command: ["npm", "run", "start:notification-service"]
+          envFrom:
+            - configMapRef:
+                name: ticketstage-config
+            - secretRef:
+                name: ticketstage-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 384Mi

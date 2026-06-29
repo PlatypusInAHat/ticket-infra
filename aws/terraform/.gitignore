@@ -1,0 +1,132 @@
+# Terraform .gitignore
+# Security: Never commit sensitive data, state files, or local configs
+
+# Terraform State Files
+terraform.tfstate
+terraform.tfstate.*
+*.tfstate
+*.tfstate.*
+
+# Terraform Working Directory
+.terraform/
+.terraform.lock.hcl
+
+# Local Terraform Overrides
+*.tf.local
+*.tfvars.local
+*.tfvars.secret
+*.auto.tfvars.local
+terraform.tfvars.local
+
+# Temporary Files
+*.tfplan
+tfplan
+*.backup
+*.swp
+*.swo
+*~
+
+# Crash Logs
+crash.log
+crash.*.log
+
+# Ignore override files (secrets)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Include override files
+!override.tf
+!override.tf.json
+
+# Ignore sensitive shell scripts
+*.env
+*.env.local
+.env
+.env.local
+
+# SSH Keys and Certificates
+*.pem
+*.key
+*.pub
+*.crt
+*.cert
+id_rsa*
+id_ed25519*
+
+# AWS Credentials
+.aws/credentials
+.aws/config
+
+# IDE Files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Build Artifacts
+dist/
+build/
+*.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+
+# Temporary Directories
+tmp/
+temp/
+debug/
+logs/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Custom Output Files
+outputs_*.json
+*.log
+apply.log
+plan.log
+
+# Terraform Cloud
+.terraform.lock.hcl
+/tfc-config/
+
+# Testing
+.terraform.test/
+test-fixtures/
+
+# Documentation builds
+docs/_build/
+site/
+
+# Sensitive environment specific files
+environments/*/terraform.tfvars.local
+environments/*/terraform.tfvars.secret
+layers/**/terraform.tfvars.local
+layers/**/terraform.tfvars.secret
+
+# GitHub Actions artifacts
+.github/workflows/*.log
+
+# Allowed files (override gitignore)
+!.gitkeep
+!.env.example
+!.env.template
+!/README.md
+!/QUICKSTART.md
+!/*.tfvars.example

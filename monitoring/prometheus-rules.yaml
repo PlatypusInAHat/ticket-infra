@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ticketstage-alerts
+  namespace: ticketstage
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: ticketstage.rules
+      rules:
+        - alert: TicketStagePodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total{namespace="ticketstage"}[10m]) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod đang restart liên tục"
+            description: "Namespace ticketstage có container restart trong 10 phút gần đây."
+        - alert: TicketStageHighCpuUsage
+          expr: sum(rate(container_cpu_usage_seconds_total{namespace="ticketstage", container!="POD", container!=""}[5m])) by (pod) > 0.8
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CPU pod cao"
+            description: "Pod {{ $labels.pod }} đang dùng CPU cao kéo dài."
+        - alert: TicketStageDeploymentReplicasUnavailable
+          expr: kube_deployment_status_replicas_unavailable{namespace="ticketstage"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Deployment thiếu replica khả dụng"
+            description: "Deployment {{ $labels.deployment }} đang có replica không khả dụng."

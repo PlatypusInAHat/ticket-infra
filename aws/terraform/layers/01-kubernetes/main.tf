@@ -1,0 +1,96 @@
+# Layer 1: Kubernetes
+# This layer sets up the EKS cluster with:
+# - EKS cluster with control plane logging
+# - System on-demand node group
+# - App spot node group for cost optimization
+# - OIDC provider for IRSA (IAM Roles for Service Accounts)
+# - Cluster autoscaler IAM role
+
+terraform {
+  required_version = ">= 1.5"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.25"
+    }
+  }
+}
+
+# Data source for networking layer outputs
+data "terraform_remote_state" "networking" {
+  backend = "local"
+
+  config = {
+    path = "${path.module}/../00-networking/terraform.tfstate"
+  }
+}
+
+module "eks" {
+  source = "../../modules/eks"
+
+  cluster_name              = "${var.environment}-eks"
+  kubernetes_version        = var.kubernetes_version
+  region                    = var.aws_region
+  private_subnets           = data.terraform_remote_state.networking.outputs.private_subnets
+  public_subnets            = data.terraform_remote_state.networking.outputs.public_subnets
+  cluster_security_group_id = data.terraform_remote_state.networking.outputs.eks_cluster_security_group_id
+
+  # Node group settings
+  system_node_group_desired_size   = var.system_node_group_desired_size
+  system_node_group_min_size       = var.system_node_group_min_size
+  system_node_group_max_size       = var.system_node_group_max_size
+  system_node_group_instance_types = var.system_node_group_instance_types
+
+  app_spot_node_group_desired_size   = var.app_spot_node_group_desired_size
+  app_spot_node_group_min_size       = var.app_spot_node_group_min_size
+  app_spot_node_group_max_size       = var.app_spot_node_group_max_size
+  app_spot_node_group_instance_types = var.app_spot_node_group_instance_types
+
+  tags = local.common_tags
+}
+
+# Configure Kubernetes provider
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_id]
+  }
+}
+
+# Cluster Autoscaler Helm Chart (optional - can be installed later)
+# resource "helm_release" "cluster_autoscaler" {
+#   name       = "cluster-autoscaler"
+#   repository = "https://kubernetes.github.io/autoscaler"
+#   chart      = "cluster-autoscaler"
+#   namespace  = "kube-system"
+#   version    = "9.29.0"
+#
+#   values = [
+#     templatefile("${path.module}/cluster-autoscaler-values.yaml", {
+#       aws_region       = var.aws_region
+#       cluster_name     = module.eks.cluster_id
+#       role_arn         = module.eks.cluster_autoscaler_iam_role_arn
+#     })
+#   ]
+#
+#   depends_on = [module.eks]
+# }
+
+locals {
+  common_tags = merge(
+    var.tags,
+    {
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+      Layer       = "Kubernetes"
+    }
+  )
+}

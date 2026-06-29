@@ -1,0 +1,57 @@
+grafana:
+  enabled: true
+  adminPassword: "change-me-use-secret"
+  defaultDashboardsTimezone: Asia/Ho_Chi_Minh
+  persistence:
+    enabled: true
+    size: 5Gi
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    hosts:
+      - grafana.ticketstage.example.com
+
+prometheus:
+  prometheusSpec:
+    retention: 7d
+    retentionSize: 20GB
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 30Gi
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    replicas: 1
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 5Gi
+
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true
+
+prometheusOperator:
+  admissionWebhooks:
+    enabled: true

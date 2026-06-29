@@ -1,0 +1,55 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: ticketstage-prod
+  region: ap-southeast-1
+  version: "1.30"
+
+availabilityZones:
+  - ap-southeast-1a
+  - ap-southeast-1b
+
+iam:
+  withOIDC: true
+
+managedNodeGroups:
+  - name: system-on-demand
+    labels:
+      workload: system
+    instanceTypes:
+      - t3.medium
+      - t3a.medium
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 3
+    volumeSize: 40
+    privateNetworking: true
+    tags:
+      nodegroup-role: system
+
+  - name: app-spot
+    labels:
+      workload: app
+    instancesDistribution:
+      instanceTypes:
+        - t3.medium
+        - t3a.medium
+        - t2.medium
+        - m5.large
+      onDemandBaseCapacity: 0
+      onDemandPercentageAboveBaseCapacity: 0
+      spotAllocationStrategy: capacity-optimized
+    desiredCapacity: 2
+    minSize: 0
+    maxSize: 10
+    volumeSize: 40
+    privateNetworking: true
+    tags:
+      nodegroup-role: app-spot
+
+addons:
+  - name: vpc-cni
+  - name: coredns
+  - name: kube-proxy
+  - name: aws-ebs-csi-driver

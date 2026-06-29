@@ -1,0 +1,29 @@
+output "ecr_backend_repository_url" {
+  description = "ECR backend repository URL"
+  value       = module.ecr.backend_repository_url
+}
+
+output "ecr_frontend_repository_url" {
+  description = "ECR frontend repository URL"
+  value       = module.ecr.frontend_repository_url
+}
+
+output "s3_bucket_id" {
+  description = "S3 bucket ID"
+  value       = module.s3_cloudfront.s3_bucket_id
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID"
+  value       = module.s3_cloudfront.cloudfront_distribution_id
+}
+
+output "cloudfront_domain_name" {
+  description = "CloudFront domain name"
+  value       = module.s3_cloudfront.cloudfront_domain_name
+}
+
+output "secrets_arns" {
+  description = "Secrets Manager ARNs"
+  value       = module.secrets_manager.secrets_arns
+}
