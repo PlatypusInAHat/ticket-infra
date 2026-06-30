@@ -63,7 +63,7 @@ variable "rabbitmq_url" {
 }
 
 variable "payment_provider" {
-  description = "Payment provider name (e.g., stripe, paypal)"
+  description = "Payment provider name (e.g., vnpay, momo)"
   type        = string
   default     = ""
 }

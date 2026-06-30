@@ -327,11 +327,26 @@ spec:
         - name: notification-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
           command: ["npm", "run", "start:notification-service"]
+          ports:
+            - containerPort: 5105
           envFrom:
             - configMapRef:
                 name: ticketstage-config
             - secretRef:
                 name: ticketstage-secrets
+          env:
+            - name: NOTIFICATION_SERVICE_PORT
+              value: "5105"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5105
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5105
+            initialDelaySeconds: 30
           resources:
             requests:
               cpu: 50m

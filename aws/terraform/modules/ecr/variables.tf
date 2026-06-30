@@ -53,9 +53,9 @@ variable "lifecycle_rules" {
   }))
   default = [
     {
-      description  = "Keep last 30 images tagged with version"
+      description  = "Keep last 30 release and CI images"
       tag_status   = "tagged"
-      tag_prefixes = ["v", "release"]
+      tag_prefixes = ["v", "release", "dev-", "staging-", "main-", "prod-", "sha-"]
       count_type   = "imageCountMoreThan"
       count_number = 30
       action_type  = "expire"

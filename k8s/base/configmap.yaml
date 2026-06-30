@@ -9,6 +9,7 @@ data:
   EVENT_EXCHANGE: "ticket-booking.events"
   FRONTEND_URL: "https://www.ticketstage.example.com"
   PUBLIC_API_URL: "https://api.ticketstage.example.com"
+  GATEWAY_UPSTREAM_TIMEOUT_MS: "10000"
   AUTH_SERVICE_URL: "http://auth-service:5101"
   CATALOG_SERVICE_URL: "http://catalog-service:5102"
   BOOKING_SERVICE_URL: "http://booking-service:5103"
