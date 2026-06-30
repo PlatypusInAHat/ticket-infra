@@ -95,15 +95,6 @@ resource "aws_secretsmanager_secret_version" "email_credentials" {
   secret_string = jsonencode(var.email_credentials)
 }
 
-# Secret Rotation Lambda Policy (optional - for future rotation automation)
-resource "aws_secretsmanager_secret_rotation_rules" "mongodb" {
-  secret_id = aws_secretsmanager_secret.mongodb_connection_string.id
-
-  rules {
-    automatically_after_days = var.secret_rotation_days
-  }
-}
-
 # CloudWatch Log Group for Secrets Manager audit
 resource "aws_cloudwatch_log_group" "secrets_manager" {
   name              = "${var.log_group_prefix}/${var.environment}"
@@ -121,7 +112,7 @@ locals {
 }
 
 resource "aws_secretsmanager_secret_policy" "policies" {
-  for_each  = local.secrets_needing_policy
+  for_each   = local.secrets_needing_policy
   secret_arn = each.value
 
   policy = jsonencode({

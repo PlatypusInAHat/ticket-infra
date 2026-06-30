@@ -5,12 +5,24 @@ on:
     branches:
       - main
     paths:
-      - 'infra/**'
+      - 'aws/**'
+      - 'cloudflare/**'
+      - 'k8s/**'
+      - 'monitoring/**'
+      - 'dependency-check-suppressions.xml'
+      - 'sonar-project.properties'
+      - '.github/workflows/infra-cd.yml'
   pull_request:
     branches:
       - main
     paths:
-      - 'infra/**'
+      - 'aws/**'
+      - 'cloudflare/**'
+      - 'k8s/**'
+      - 'monitoring/**'
+      - 'dependency-check-suppressions.xml'
+      - 'sonar-project.properties'
+      - '.github/workflows/infra-cd.yml'
   workflow_dispatch:
     inputs:
       environment:
@@ -23,7 +35,7 @@ on:
           - staging
           - prod
       layer:
-        description: 'Terraform layer to apply'
+        description: 'Terraform layer to manage. Use all only with destroy.'
         required: true
         default: '00-networking'
         type: choice
@@ -34,6 +46,7 @@ on:
           - '03-storage'
           - '04-observability'
           - 'cloudflare'
+          - 'all'
       action:
         description: 'Terraform Action'
         required: true
@@ -46,7 +59,7 @@ on:
 
 jobs:
   validate:
-    name: Terraform Validate
+    name: Validate
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' || github.event_name == 'push'
     steps:
@@ -59,7 +72,125 @@ jobs:
           terraform_version: "1.5.0"
 
       - name: Terraform Format Check
-        run: terraform fmt -check -recursive infra/
+        run: terraform fmt -check -recursive .
+
+      - name: Terraform Validate Layers
+        run: |
+          set -euo pipefail
+
+          for dir in \
+            aws/terraform/layers/00-networking \
+            aws/terraform/layers/01-kubernetes \
+            aws/terraform/layers/02-data \
+            aws/terraform/layers/03-storage \
+            aws/terraform/layers/04-observability \
+            cloudflare; do
+            echo "::group::Validate ${dir}"
+            terraform -chdir="${dir}" init -backend=false
+            terraform -chdir="${dir}" validate
+            echo "::endgroup::"
+          done
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Render Kubernetes Manifests
+        run: |
+          kubectl kustomize k8s/base >/dev/null
+          kubectl kustomize k8s/overlays/dev >/dev/null
+          kubectl kustomize k8s/overlays/prod >/dev/null
+
+  audit:
+    name: Audit Code And IaC
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    permissions:
+      contents: read
+      security-events: write
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: GitHub Actions Lint
+        uses: raven-actions/actionlint@v2
+
+      - name: Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Terraform And Kubernetes Security Scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: table
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+
+      - name: Trivy Filesystem Vulnerability Scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Checkov IaC Policy Scan
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: terraform,kubernetes,github_actions
+          quiet: true
+
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: ticket-infra
+          path: .
+          format: HTML
+          out: dependency-check-report
+          args: >
+            --enableExperimental
+            --failOnCVSS 7
+            --suppression dependency-check-suppressions.xml
+
+      - name: Upload OWASP Dependency Check Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check-report
+          path: dependency-check-report
+          if-no-files-found: ignore
+
+      - name: SonarQube Scan
+        if: env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != ''
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
+
+      - name: SonarQube Quality Gate
+        if: env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != ''
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
 
   # The Plan/Apply job runs ONLY when manually triggered via workflow_dispatch
   # WARNING: To use this job, you MUST configure Remote State (S3 backend) in your provider.tf files!
@@ -71,7 +202,32 @@ jobs:
     # Configure variables based on the selected layer
     env:
       TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
-      WORKING_DIR: ${{ github.event.inputs.layer == 'cloudflare' && 'infra/cloudflare' || format('infra/aws/terraform/layers/{0}', github.event.inputs.layer) }}
+      WORKING_DIR: ${{ github.event.inputs.layer == 'cloudflare' && 'cloudflare' || format('aws/terraform/layers/{0}', github.event.inputs.layer) }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_terraform_state_bucket: ${{ secrets.TF_STATE_BUCKET }}
+      TF_VAR_terraform_state_region: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_VAR_mongodb_public_key: ${{ secrets.MONGODB_PUBLIC_KEY }}
+      TF_VAR_mongodb_private_key: ${{ secrets.MONGODB_PRIVATE_KEY }}
+      TF_VAR_mongodb_org_id: ${{ secrets.MONGODB_ORG_ID }}
+      TF_VAR_mongodb_username: ${{ secrets.MONGODB_USERNAME }}
+      TF_VAR_mongodb_password: ${{ secrets.MONGODB_PASSWORD }}
+      TF_VAR_mq_admin_username: ${{ secrets.MQ_ADMIN_USERNAME }}
+      TF_VAR_mq_admin_password: ${{ secrets.MQ_ADMIN_PASSWORD }}
+      TF_VAR_mongodb_connection_string: ${{ secrets.MONGODB_CONNECTION_STRING }}
+      TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+      TF_VAR_rabbitmq_username: ${{ secrets.RABBITMQ_USERNAME }}
+      TF_VAR_rabbitmq_password: ${{ secrets.RABBITMQ_PASSWORD }}
+      TF_VAR_rabbitmq_url: ${{ secrets.RABBITMQ_URL }}
+      TF_VAR_eks_service_account_role_arn: ${{ secrets.EKS_SERVICE_ACCOUNT_ROLE_ARN }}
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      CLOUDFLARE_DNS_RECORDS: ${{ secrets.CLOUDFLARE_DNS_RECORDS }}
+      DESTROY_LAYERS: "cloudflare 04-observability 03-storage 02-data 01-kubernetes 00-networking"
 
     steps:
       - name: Checkout Repository
@@ -82,33 +238,151 @@ jobs:
         with:
           terraform_version: "1.5.0"
 
+      - name: Check Required Secrets
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.layer }}" = "all" ] && [ "${{ github.event.inputs.action }}" != "destroy" ]; then
+            echo "layer=all is only allowed with action=destroy."
+            exit 1
+          fi
+
+          missing=()
+          require() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              missing+=("$name")
+            fi
+          }
+
+          require AWS_ACCESS_KEY_ID "${AWS_ACCESS_KEY_ID}"
+          require AWS_SECRET_ACCESS_KEY "${AWS_SECRET_ACCESS_KEY}"
+          require AWS_REGION "${AWS_REGION}"
+          require TF_STATE_BUCKET "${TF_STATE_BUCKET}"
+          require TF_STATE_REGION "${TF_STATE_REGION}"
+          require TF_LOCK_TABLE "${TF_LOCK_TABLE}"
+
+          if [ "${{ github.event.inputs.layer }}" = "all" ]; then
+            target_layers="cloudflare 03-storage 02-data"
+          else
+            target_layers="${{ github.event.inputs.layer }}"
+          fi
+
+          for target_layer in ${target_layers}; do
+            case "${target_layer}" in
+              02-data)
+                require MONGODB_PUBLIC_KEY "${TF_VAR_mongodb_public_key}"
+                require MONGODB_PRIVATE_KEY "${TF_VAR_mongodb_private_key}"
+                require MONGODB_ORG_ID "${TF_VAR_mongodb_org_id}"
+                require MONGODB_USERNAME "${TF_VAR_mongodb_username}"
+                require MONGODB_PASSWORD "${TF_VAR_mongodb_password}"
+                require MQ_ADMIN_USERNAME "${TF_VAR_mq_admin_username}"
+                require MQ_ADMIN_PASSWORD "${TF_VAR_mq_admin_password}"
+                ;;
+              03-storage)
+                require MONGODB_CONNECTION_STRING "${TF_VAR_mongodb_connection_string}"
+                require MONGODB_USERNAME "${TF_VAR_mongodb_username}"
+                require JWT_SECRET "${TF_VAR_jwt_secret}"
+                require RABBITMQ_USERNAME "${TF_VAR_rabbitmq_username}"
+                require RABBITMQ_PASSWORD "${TF_VAR_rabbitmq_password}"
+                require RABBITMQ_URL "${TF_VAR_rabbitmq_url}"
+                require EKS_SERVICE_ACCOUNT_ROLE_ARN "${TF_VAR_eks_service_account_role_arn}"
+                ;;
+              cloudflare)
+                require CLOUDFLARE_API_TOKEN "${TF_VAR_cloudflare_api_token}"
+                require CLOUDFLARE_ZONE_ID "${TF_VAR_cloudflare_zone_id}"
+                ;;
+            esac
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing required GitHub secrets: %s\n' "${missing[*]}"
+            exit 1
+          fi
+
       - name: Configure AWS Credentials
-        if: github.event.inputs.layer != 'cloudflare'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-          
-      - name: Setup Cloudflare Token
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Optional Cloudflare DNS Records
         if: github.event.inputs.layer == 'cloudflare'
-        run: echo "TF_VAR_cloudflare_api_token=${{ secrets.CLOUDFRONT_API_TOKEN }}" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          if [ -n "${CLOUDFLARE_DNS_RECORDS}" ]; then
+            {
+              echo "TF_VAR_dns_records<<EOF"
+              echo "${CLOUDFLARE_DNS_RECORDS}"
+              echo "EOF"
+            } >> "$GITHUB_ENV"
+          fi
 
       - name: Terraform Init
+        if: github.event.inputs.layer != 'all'
         working-directory: ${{ env.WORKING_DIR }}
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=${{ github.event.inputs.environment }}/${{ github.event.inputs.layer }}/terraform.tfstate" \
+            -backend-config="region=${TF_STATE_REGION}" \
+            -backend-config="dynamodb_table=${TF_LOCK_TABLE}" \
+            -backend-config="encrypt=true"
 
       - name: Terraform Plan
-        if: github.event.inputs.action == 'plan'
+        if: github.event.inputs.action == 'plan' && github.event.inputs.layer != 'all'
         working-directory: ${{ env.WORKING_DIR }}
-        run: terraform plan -var-file="${{ env.TF_VAR_FILE }}"
+        run: |
+          if [ "${{ github.event.inputs.layer }}" = "cloudflare" ]; then
+            terraform plan
+          else
+            terraform plan -var-file="${{ env.TF_VAR_FILE }}"
+          fi
 
       - name: Terraform Apply
-        if: github.event.inputs.action == 'apply'
+        if: github.event.inputs.action == 'apply' && github.event.inputs.layer != 'all'
         working-directory: ${{ env.WORKING_DIR }}
-        run: terraform apply -var-file="${{ env.TF_VAR_FILE }}" -auto-approve
+        run: |
+          if [ "${{ github.event.inputs.layer }}" = "cloudflare" ]; then
+            terraform apply -auto-approve
+          else
+            terraform apply -var-file="${{ env.TF_VAR_FILE }}" -auto-approve
+          fi
         
       - name: Terraform Destroy
-        if: github.event.inputs.action == 'destroy'
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.layer != 'all'
         working-directory: ${{ env.WORKING_DIR }}
-        run: terraform destroy -var-file="${{ env.TF_VAR_FILE }}" -auto-approve
+        run: |
+          if [ "${{ github.event.inputs.layer }}" = "cloudflare" ]; then
+            terraform destroy -auto-approve
+          else
+            terraform destroy -var-file="${{ env.TF_VAR_FILE }}" -auto-approve
+          fi
+
+      - name: Terraform Destroy All In Reverse Order
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.layer == 'all'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for layer in ${DESTROY_LAYERS}; do
+            if [ "${layer}" = "cloudflare" ]; then
+              workdir="cloudflare"
+              var_file_args=()
+            else
+              workdir="aws/terraform/layers/${layer}"
+              var_file_args=(-var-file="../../environments/${{ github.event.inputs.environment }}/terraform.tfvars")
+            fi
+
+            echo "::group::Destroy ${layer}"
+            terraform -chdir="${workdir}" init \
+              -backend-config="bucket=${TF_STATE_BUCKET}" \
+              -backend-config="key=${{ github.event.inputs.environment }}/${layer}/terraform.tfstate" \
+              -backend-config="region=${TF_STATE_REGION}" \
+              -backend-config="dynamodb_table=${TF_LOCK_TABLE}" \
+              -backend-config="encrypt=true"
+
+            terraform -chdir="${workdir}" destroy -auto-approve "${var_file_args[@]}"
+            echo "::endgroup::"
+          done

@@ -1,11 +1,11 @@
 output "ecr_backend_repository_url" {
   description = "ECR backend repository URL"
-  value       = module.ecr.backend_repository_url
+  value       = module.ecr.repository_urls["backend"]
 }
 
 output "ecr_frontend_repository_url" {
   description = "ECR frontend repository URL"
-  value       = module.ecr.frontend_repository_url
+  value       = module.ecr.repository_urls["frontend"]
 }
 
 output "s3_bucket_id" {

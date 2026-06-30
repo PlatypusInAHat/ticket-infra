@@ -19,6 +19,17 @@ variable "project_name" {
   default     = "TicketBooking"
 }
 
+variable "terraform_state_bucket" {
+  description = "S3 bucket that stores Terraform remote state."
+  type        = string
+}
+
+variable "terraform_state_region" {
+  description = "AWS region of the Terraform remote state S3 bucket."
+  type        = string
+  default     = "us-east-1"
+}
+
 # ECR
 variable "enable_image_scanning" {
   description = "Enable image scanning"

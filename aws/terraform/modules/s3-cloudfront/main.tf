@@ -57,6 +57,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "frontend" {
   rule {
     id = var.lifecycle_rule_id
 
+    filter {
+      prefix = ""
+    }
+
     noncurrent_version_transition {
       noncurrent_days = var.noncurrent_transition_days
       storage_class   = var.noncurrent_transition_storage_class
@@ -122,6 +126,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   is_ipv6_enabled     = var.is_ipv6_enabled
   default_root_object = var.default_root_object
   http_version        = var.http_version
+  aliases             = var.custom_domain != "" ? [var.custom_domain] : []
 
   # Cache behavior for static assets
   default_cache_behavior {
@@ -214,13 +219,6 @@ resource "aws_cloudfront_distribution" "frontend" {
     acm_certificate_arn            = var.custom_domain != "" ? var.acm_certificate_arn : null
     ssl_support_method             = var.custom_domain != "" ? var.ssl_support_method : null
     minimum_protocol_version       = var.minimum_protocol_version
-  }
-
-  dynamic "aliases" {
-    for_each = var.custom_domain != "" ? [var.custom_domain] : []
-    content {
-      items = [aliases.value]
-    }
   }
 
   tags = var.tags

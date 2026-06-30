@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+images:
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/ticketstage-backend
+    newTag: dev
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: ticketstage-config
+    patch: |-
+      - op: replace
+        path: /data/FRONTEND_URL
+        value: https://dev.ticketstage.example.com
+      - op: replace
+        path: /data/PUBLIC_API_URL
+        value: https://api-dev.ticketstage.example.com
+  - target:
+      kind: Ingress
+      name: ticketstage-api
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: api-dev.ticketstage.example.com

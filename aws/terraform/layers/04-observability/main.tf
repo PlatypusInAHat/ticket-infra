@@ -5,16 +5,6 @@
 # - SNS topics for notifications
 # - CloudWatch Dashboard
 
-terraform {
-  required_version = ">= 1.5"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
 module "monitoring" {
   source = "../../modules/monitoring"
 

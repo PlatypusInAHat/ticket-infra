@@ -163,10 +163,7 @@ variable "log_metric_filters" {
 # Dashboard Widgets
 variable "dashboard_widgets" {
   description = "List of CloudWatch dashboard widgets"
-  type = list(object({
-    type       = string
-    properties = any
-  }))
+  type        = any
   default = [
     {
       type = "metric"

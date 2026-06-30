@@ -4,22 +4,14 @@
 # - S3 and CloudFront for frontend hosting
 # - Secrets Manager for sensitive configuration
 
-terraform {
-  required_version = ">= 1.5"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
 # Data source for kubernetes layer outputs
 data "terraform_remote_state" "kubernetes" {
-  backend = "local"
+  backend = "s3"
 
   config = {
-    path = "${path.module}/../01-kubernetes/terraform.tfstate"
+    bucket = var.terraform_state_bucket
+    key    = "${var.environment}/01-kubernetes/terraform.tfstate"
+    region = var.terraform_state_region
   }
 }
 
