@@ -8,6 +8,7 @@ on:
       - 'aws/**'
       - 'cloudflare/**'
       - 'k8s/**'
+      - 'argocd/**'
       - 'monitoring/**'
       - 'dependency-check-suppressions.xml'
       - 'sonar-project.properties'
@@ -19,6 +20,7 @@ on:
       - 'aws/**'
       - 'cloudflare/**'
       - 'k8s/**'
+      - 'argocd/**'
       - 'monitoring/**'
       - 'dependency-check-suppressions.xml'
       - 'sonar-project.properties'
@@ -99,6 +101,8 @@ jobs:
           kubectl kustomize k8s/base >/dev/null
           kubectl kustomize k8s/overlays/dev >/dev/null
           kubectl kustomize k8s/overlays/prod >/dev/null
+          kubectl kustomize argocd/bootstrap >/dev/null
+          kubectl kustomize argocd/applications >/dev/null
 
   audit:
     name: Audit Code And IaC
