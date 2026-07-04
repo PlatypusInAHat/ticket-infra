@@ -35,19 +35,62 @@ spec:
                   matchLabels: *gatewayLabels
       containers:
         - name: api-gateway
-          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:0.0.0-placeholder
           imagePullPolicy: IfNotPresent
           command: ["npm", "run", "start:gateway"]
           ports:
             - containerPort: 5000
           envFrom:
-            - configMapRef:
-                name: ticketstage-config
             - secretRef:
                 name: ticketstage-secrets
           env:
             - name: GATEWAY_PORT
               value: "5000"
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: NODE_ENV
+            - name: SERVICE_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: SERVICE_MODE
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: FRONTEND_URL
+            - name: GATEWAY_UPSTREAM_TIMEOUT_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: GATEWAY_UPSTREAM_TIMEOUT_MS
+            - name: AUTH_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: AUTH_SERVICE_URL
+            - name: CATALOG_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: CATALOG_SERVICE_URL
+            - name: BOOKING_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOOKING_SERVICE_URL
+            - name: CHECKIN_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: CHECKIN_SERVICE_URL
+            - name: NOTIFICATION_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: NOTIFICATION_SERVICE_URL
           readinessProbe:
             httpGet:
               path: /api/health
@@ -119,18 +162,111 @@ spec:
                   matchLabels: *authLabels
       containers:
         - name: auth-service
-          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:0.0.0-placeholder
           command: ["npm", "run", "start:auth-service"]
           ports:
             - containerPort: 5101
           envFrom:
-            - configMapRef:
-                name: ticketstage-config
             - secretRef:
                 name: ticketstage-secrets
           env:
             - name: AUTH_SERVICE_PORT
               value: "5101"
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: NODE_ENV
+            - name: SERVICE_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: SERVICE_MODE
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: FRONTEND_URL
+            - name: CATALOG_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: CATALOG_SERVICE_URL
+            - name: BOOKING_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOOKING_SERVICE_URL
+            - name: CHECKIN_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: CHECKIN_SERVICE_URL
+            - name: JWT_ACCESS_EXPIRE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: JWT_ACCESS_EXPIRE
+            - name: JWT_REFRESH_EXPIRE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: JWT_REFRESH_EXPIRE
+            - name: PASSWORD_HASH_ROUNDS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: PASSWORD_HASH_ROUNDS
+            - name: MIN_PASSWORD_LENGTH
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: MIN_PASSWORD_LENGTH
+            - name: RATE_LIMIT_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: RATE_LIMIT_ENABLED
+            - name: RATE_LIMIT_STORE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: RATE_LIMIT_STORE
+            - name: EVENT_EXCHANGE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_EXCHANGE
+            - name: EVENT_CONSUMER_PREFETCH
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_CONSUMER_PREFETCH
+            - name: EVENT_RETRY_DELAY_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_RETRY_DELAY_MS
+            - name: EVENT_MAX_RETRIES
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_MAX_RETRIES
+            - name: OUTBOX_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: OUTBOX_ENABLED
+            - name: OUTBOX_PUBLISH_INTERVAL_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: OUTBOX_PUBLISH_INTERVAL_MS
+            - name: OUTBOX_BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: OUTBOX_BATCH_SIZE
           readinessProbe:
             httpGet:
               path: /health
@@ -199,18 +335,51 @@ spec:
                   matchLabels: *catalogLabels
       containers:
         - name: catalog-service
-          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:0.0.0-placeholder
           command: ["npm", "run", "start:catalog-service"]
           ports:
             - containerPort: 5102
           envFrom:
-            - configMapRef:
-                name: ticketstage-config
             - secretRef:
                 name: ticketstage-secrets
           env:
             - name: CATALOG_SERVICE_PORT
               value: "5102"
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: NODE_ENV
+            - name: SERVICE_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: SERVICE_MODE
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: FRONTEND_URL
+            - name: EVENT_EXCHANGE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_EXCHANGE
+            - name: EVENT_CONSUMER_PREFETCH
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_CONSUMER_PREFETCH
+            - name: EVENT_RETRY_DELAY_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_RETRY_DELAY_MS
+            - name: EVENT_MAX_RETRIES
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_MAX_RETRIES
           readinessProbe:
             httpGet:
               path: /health
@@ -279,18 +448,156 @@ spec:
                   matchLabels: *bookingLabels
       containers:
         - name: booking-service
-          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:0.0.0-placeholder
           command: ["npm", "run", "start:booking-service"]
           ports:
             - containerPort: 5103
           envFrom:
-            - configMapRef:
-                name: ticketstage-config
             - secretRef:
                 name: ticketstage-secrets
           env:
             - name: BOOKING_SERVICE_PORT
               value: "5103"
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: NODE_ENV
+            - name: SERVICE_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: SERVICE_MODE
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: FRONTEND_URL
+            - name: PUBLIC_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: PUBLIC_API_URL
+            - name: CATALOG_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: CATALOG_SERVICE_URL
+            - name: BOOKING_HOLD_MINUTES
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOOKING_HOLD_MINUTES
+            - name: BOOKING_QUEUE_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOOKING_QUEUE_ENABLED
+            - name: BOOKING_QUEUE_CONCURRENCY
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOOKING_QUEUE_CONCURRENCY
+            - name: BOOKING_QUEUE_MAX_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOOKING_QUEUE_MAX_SIZE
+            - name: BOOKING_QUEUE_WAIT_TIMEOUT_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOOKING_QUEUE_WAIT_TIMEOUT_MS
+            - name: BOOKING_QUEUE_LEASE_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOOKING_QUEUE_LEASE_MS
+            - name: RATE_LIMIT_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: RATE_LIMIT_ENABLED
+            - name: RATE_LIMIT_STORE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: RATE_LIMIT_STORE
+            - name: BOOKING_CREATE_RATE_LIMIT_WINDOW_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOOKING_CREATE_RATE_LIMIT_WINDOW_MS
+            - name: BOOKING_CREATE_RATE_LIMIT_MAX
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOOKING_CREATE_RATE_LIMIT_MAX
+            - name: PAYMENT_RATE_LIMIT_WINDOW_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: PAYMENT_RATE_LIMIT_WINDOW_MS
+            - name: PAYMENT_RATE_LIMIT_MAX
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: PAYMENT_RATE_LIMIT_MAX
+            - name: EVENT_REMINDER_WORKER_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_REMINDER_WORKER_ENABLED
+            - name: EVENT_REMINDER_INTERVAL_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_REMINDER_INTERVAL_MS
+            - name: EVENT_REMINDER_WINDOW_HOURS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_REMINDER_WINDOW_HOURS
+            - name: EVENT_REMINDER_BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_REMINDER_BATCH_SIZE
+            - name: EVENT_EXCHANGE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_EXCHANGE
+            - name: EVENT_CONSUMER_PREFETCH
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_CONSUMER_PREFETCH
+            - name: EVENT_RETRY_DELAY_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_RETRY_DELAY_MS
+            - name: EVENT_MAX_RETRIES
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_MAX_RETRIES
+            - name: OUTBOX_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: OUTBOX_ENABLED
+            - name: OUTBOX_PUBLISH_INTERVAL_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: OUTBOX_PUBLISH_INTERVAL_MS
+            - name: OUTBOX_BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: OUTBOX_BATCH_SIZE
           readinessProbe:
             httpGet:
               path: /health
@@ -359,18 +666,66 @@ spec:
                   matchLabels: *checkinLabels
       containers:
         - name: checkin-service
-          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:0.0.0-placeholder
           command: ["npm", "run", "start:checkin-service"]
           ports:
             - containerPort: 5104
           envFrom:
-            - configMapRef:
-                name: ticketstage-config
             - secretRef:
                 name: ticketstage-secrets
           env:
             - name: CHECKIN_SERVICE_PORT
               value: "5104"
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: NODE_ENV
+            - name: SERVICE_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: SERVICE_MODE
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: FRONTEND_URL
+            - name: EVENT_EXCHANGE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_EXCHANGE
+            - name: EVENT_CONSUMER_PREFETCH
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_CONSUMER_PREFETCH
+            - name: EVENT_RETRY_DELAY_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_RETRY_DELAY_MS
+            - name: EVENT_MAX_RETRIES
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_MAX_RETRIES
+            - name: OUTBOX_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: OUTBOX_ENABLED
+            - name: OUTBOX_PUBLISH_INTERVAL_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: OUTBOX_PUBLISH_INTERVAL_MS
+            - name: OUTBOX_BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: OUTBOX_BATCH_SIZE
           readinessProbe:
             httpGet:
               path: /health
@@ -439,18 +794,96 @@ spec:
                   matchLabels: *notificationLabels
       containers:
         - name: notification-service
-          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:latest
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend:0.0.0-placeholder
           command: ["npm", "run", "start:notification-service"]
           ports:
             - containerPort: 5105
           envFrom:
-            - configMapRef:
-                name: ticketstage-config
             - secretRef:
                 name: ticketstage-secrets
           env:
             - name: NOTIFICATION_SERVICE_PORT
               value: "5105"
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: NODE_ENV
+            - name: SERVICE_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: SERVICE_MODE
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: FRONTEND_URL
+            - name: PUBLIC_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: PUBLIC_API_URL
+            - name: EVENT_EXCHANGE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_EXCHANGE
+            - name: EVENT_CONSUMER_PREFETCH
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_CONSUMER_PREFETCH
+            - name: EVENT_RETRY_DELAY_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_RETRY_DELAY_MS
+            - name: EVENT_MAX_RETRIES
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EVENT_MAX_RETRIES
+            - name: EMAIL_PROVIDER
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EMAIL_PROVIDER
+            - name: EMAIL_FROM
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EMAIL_FROM
+            - name: EMAIL_FROM_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EMAIL_FROM_NAME
+            - name: EMAIL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EMAIL_PORT
+            - name: EMAIL_SECURE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EMAIL_SECURE
+            - name: EMAIL_WORKER_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EMAIL_WORKER_ENABLED
+            - name: EMAIL_WORKER_INTERVAL_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EMAIL_WORKER_INTERVAL_MS
+            - name: EMAIL_WORKER_BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: EMAIL_WORKER_BATCH_SIZE
           readinessProbe:
             httpGet:
               path: /health
