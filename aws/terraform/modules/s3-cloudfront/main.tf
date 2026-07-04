@@ -20,12 +20,49 @@ resource "aws_s3_bucket" "frontend" {
 
 data "aws_caller_identity" "current" {}
 
+data "aws_partition" "current" {}
+
 resource "aws_kms_key" "frontend" {
   count = var.kms_key_arn == "" ? 1 : 0
 
   description             = "KMS key for ${var.environment} frontend bucket encryption"
   deletion_window_in_days = var.kms_deletion_window_in_days
   enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      {
+        Sid    = "EnableAccountRootPermissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowCloudWatchLogsUse"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.us-east-1.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:GenerateDataKey",
+          "kms:ReEncrypt*"
+        ]
+        Resource = "*"
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:${data.aws_partition.current.partition}:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:aws-waf-logs-${var.environment}-frontend-cloudfront*"
+          }
+        }
+      }
+    ]
+  })
 
   tags = var.tags
 }
@@ -40,6 +77,90 @@ resource "aws_kms_alias" "frontend" {
 locals {
   frontend_kms_key_arn   = var.kms_key_arn != "" ? var.kms_key_arn : aws_kms_key.frontend[0].arn
   cloudfront_web_acl_arn = var.cloudfront_web_acl_arn != "" ? var.cloudfront_web_acl_arn : aws_wafv2_web_acl.frontend[0].arn
+}
+
+#checkov:skip=CKV_AWS_145:AWS S3/CloudFront log delivery destinations use SSE-S3 for broad service compatibility; application buckets remain KMS encrypted.
+resource "aws_s3_bucket" "frontend_logs" {
+  bucket = "${var.environment}-frontend-logs-${data.aws_caller_identity.current.account_id}"
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-frontend-logs"
+  })
+}
+
+resource "aws_s3_bucket_public_access_block" "frontend_logs" {
+  bucket = aws_s3_bucket.frontend_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+#checkov:skip=CKV2_AWS_65:Legacy S3 and CloudFront access log delivery still requires ACL-compatible ownership on the dedicated log bucket.
+resource "aws_s3_bucket_ownership_controls" "frontend_logs" {
+  bucket = aws_s3_bucket.frontend_logs.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_acl" "frontend_logs" {
+  bucket = aws_s3_bucket.frontend_logs.id
+  acl    = "log-delivery-write"
+
+  depends_on = [
+    aws_s3_bucket_ownership_controls.frontend_logs,
+    aws_s3_bucket_public_access_block.frontend_logs
+  ]
+}
+
+resource "aws_s3_bucket_versioning" "frontend_logs" {
+  bucket = aws_s3_bucket.frontend_logs.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "frontend_logs" {
+  bucket = aws_s3_bucket.frontend_logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "frontend_logs" {
+  bucket = aws_s3_bucket.frontend_logs.id
+
+  rule {
+    id = "expire-access-logs"
+
+    filter {
+      prefix = ""
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = var.abort_incomplete_multipart_upload_days
+    }
+
+    expiration {
+      days = var.access_log_expiration_days
+    }
+
+    status = var.lifecycle_rule_status
+  }
+}
+
+resource "aws_s3_bucket_logging" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
+
+  target_bucket = aws_s3_bucket.frontend_logs.id
+  target_prefix = "s3-access/"
 }
 
 # Block all public access
@@ -93,6 +214,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "frontend" {
 
     noncurrent_version_expiration {
       noncurrent_days = var.noncurrent_expiration_days
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = var.abort_incomplete_multipart_upload_days
     }
 
     status = var.lifecycle_rule_status
@@ -149,6 +274,28 @@ resource "aws_wafv2_web_acl" "frontend" {
     }
   }
 
+  rule {
+    name     = "AWSManagedRulesKnownBadInputsRuleSet"
+    priority = 2
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.environment}-frontend-known-bad-inputs"
+      sampled_requests_enabled   = true
+    }
+  }
+
   visibility_config {
     cloudwatch_metrics_enabled = true
     metric_name                = "${var.environment}-frontend"
@@ -156,6 +303,59 @@ resource "aws_wafv2_web_acl" "frontend" {
   }
 
   tags = var.tags
+}
+
+resource "aws_cloudwatch_log_group" "waf" {
+  count = var.cloudfront_web_acl_arn == "" ? 1 : 0
+
+  name              = "aws-waf-logs-${var.environment}-frontend-cloudfront"
+  retention_in_days = var.waf_log_retention_days
+  kms_key_id        = local.frontend_kms_key_arn
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-frontend-waf-logs"
+  })
+}
+
+resource "aws_wafv2_web_acl_logging_configuration" "frontend" {
+  count = var.cloudfront_web_acl_arn == "" ? 1 : 0
+
+  log_destination_configs = [aws_cloudwatch_log_group.waf[0].arn]
+  resource_arn            = aws_wafv2_web_acl.frontend[0].arn
+}
+
+resource "aws_cloudfront_response_headers_policy" "security" {
+  name    = "${var.environment}-frontend-security-headers"
+  comment = "Security headers for ${var.environment} frontend"
+
+  security_headers_config {
+    content_type_options {
+      override = true
+    }
+
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+
+    referrer_policy {
+      referrer_policy = "strict-origin-when-cross-origin"
+      override        = true
+    }
+
+    strict_transport_security {
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+      override                   = true
+      preload                    = true
+    }
+
+    xss_protection {
+      mode_block = true
+      override   = true
+      protection = true
+    }
+  }
 }
 
 # S3 Bucket Policy - Allow CloudFront OAI
@@ -178,6 +378,7 @@ resource "aws_s3_bucket_policy" "frontend" {
   })
 }
 
+#checkov:skip=CKV2_AWS_47:The managed WebACL includes AWSManagedRulesKnownBadInputsRuleSet; Checkov cannot resolve the conditional local WebACL ARN here.
 # CloudFront Distribution
 resource "aws_cloudfront_distribution" "frontend" {
   origin {
@@ -196,13 +397,20 @@ resource "aws_cloudfront_distribution" "frontend" {
   aliases             = var.custom_domain != "" ? [var.custom_domain] : []
   web_acl_id          = local.cloudfront_web_acl_arn
 
+  logging_config {
+    bucket          = aws_s3_bucket.frontend_logs.bucket_domain_name
+    include_cookies = false
+    prefix          = "cloudfront/"
+  }
+
   # Cache behavior for static assets
   default_cache_behavior {
-    allowed_methods        = var.default_allowed_methods
-    cached_methods         = var.default_cached_methods
-    target_origin_id       = var.s3_origin_id
-    compress               = var.enable_compression
-    viewer_protocol_policy = var.viewer_protocol_policy
+    allowed_methods            = var.default_allowed_methods
+    cached_methods             = var.default_cached_methods
+    target_origin_id           = var.s3_origin_id
+    compress                   = var.enable_compression
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
+    viewer_protocol_policy     = var.viewer_protocol_policy
 
     forwarded_values {
       query_string = false
@@ -219,12 +427,13 @@ resource "aws_cloudfront_distribution" "frontend" {
 
   # Cache behavior for index.html (no caching)
   ordered_cache_behavior {
-    path_pattern           = var.index_path_pattern
-    allowed_methods        = var.default_allowed_methods
-    cached_methods         = var.default_cached_methods
-    target_origin_id       = var.s3_origin_id
-    compress               = var.enable_compression
-    viewer_protocol_policy = var.viewer_protocol_policy
+    path_pattern               = var.index_path_pattern
+    allowed_methods            = var.default_allowed_methods
+    cached_methods             = var.default_cached_methods
+    target_origin_id           = var.s3_origin_id
+    compress                   = var.enable_compression
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
+    viewer_protocol_policy     = var.viewer_protocol_policy
 
     forwarded_values {
       query_string = false
@@ -243,11 +452,12 @@ resource "aws_cloudfront_distribution" "frontend" {
   dynamic "ordered_cache_behavior" {
     for_each = var.enable_api_cache_behavior ? [1] : []
     content {
-      path_pattern           = var.api_path_pattern
-      allowed_methods        = var.api_allowed_methods
-      cached_methods         = var.default_cached_methods
-      target_origin_id       = var.s3_origin_id
-      viewer_protocol_policy = var.api_viewer_protocol_policy
+      path_pattern               = var.api_path_pattern
+      allowed_methods            = var.api_allowed_methods
+      cached_methods             = var.default_cached_methods
+      target_origin_id           = var.s3_origin_id
+      response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
+      viewer_protocol_policy     = var.api_viewer_protocol_policy
 
       forwarded_values {
         query_string = true

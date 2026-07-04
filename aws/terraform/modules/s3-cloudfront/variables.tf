@@ -139,6 +139,18 @@ variable "noncurrent_expiration_days" {
   default     = 90
 }
 
+variable "abort_incomplete_multipart_upload_days" {
+  description = "Days before aborting incomplete multipart uploads"
+  type        = number
+  default     = 7
+}
+
+variable "access_log_expiration_days" {
+  description = "Days before expiring frontend access logs"
+  type        = number
+  default     = 365
+}
+
 # CORS
 variable "cors_allowed_headers" {
   description = "Allowed CORS headers"
@@ -194,6 +206,12 @@ variable "cloudfront_web_acl_arn" {
   description = "Optional existing WAFv2 WebACL ARN for CloudFront. A baseline WebACL is created when empty."
   type        = string
   default     = ""
+}
+
+variable "waf_log_retention_days" {
+  description = "CloudWatch retention days for CloudFront WAF logs"
+  type        = number
+  default     = 365
 }
 
 variable "is_ipv6_enabled" {

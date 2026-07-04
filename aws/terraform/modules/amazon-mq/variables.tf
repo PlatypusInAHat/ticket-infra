@@ -62,6 +62,18 @@ variable "enable_cloudwatch_logs" {
 variable "log_retention_days" {
   description = "Log retention days"
   type        = number
+  default     = 365
+}
+
+variable "kms_key_arn" {
+  description = "Optional existing KMS key ARN for Amazon MQ encryption. A customer managed key is created when empty."
+  type        = string
+  default     = ""
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "Deletion window for the generated Amazon MQ KMS key"
+  type        = number
   default     = 7
 }
 
@@ -87,6 +99,12 @@ variable "tags" {
   description = "Common tags for resources"
   type        = map(string)
   default     = {}
+}
+
+variable "iam_policy_version" {
+  description = "IAM policy document version"
+  type        = string
+  default     = "2012-10-17"
 }
 
 # Security Group Configuration

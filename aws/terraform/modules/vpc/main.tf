@@ -11,6 +11,10 @@ terraform {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_partition" "current" {}
+
 # VPC
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
@@ -19,6 +23,128 @@ resource "aws_vpc" "main" {
 
   tags = merge(var.tags, {
     Name = "${var.environment}-vpc"
+  })
+}
+
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-default-sg-restricted"
+  })
+}
+
+resource "aws_kms_key" "vpc_flow_logs" {
+  description             = "KMS key for ${var.environment} VPC flow logs"
+  deletion_window_in_days = var.kms_deletion_window_in_days
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      {
+        Sid    = "EnableAccountRootPermissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowCloudWatchLogsUse"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.${var.region}.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:GenerateDataKey",
+          "kms:ReEncrypt*"
+        ]
+        Resource = "*"
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:${data.aws_partition.current.partition}:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:${var.flow_log_group_name_prefix}/${var.environment}*"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-vpc-flow-logs-kms"
+  })
+}
+
+resource "aws_kms_alias" "vpc_flow_logs" {
+  name          = "alias/${var.environment}-vpc-flow-logs"
+  target_key_id = aws_kms_key.vpc_flow_logs.key_id
+}
+
+resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
+  name              = "${var.flow_log_group_name_prefix}/${var.environment}"
+  retention_in_days = var.flow_log_retention_days
+  kms_key_id        = aws_kms_key.vpc_flow_logs.arn
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-vpc-flow-logs"
+  })
+}
+
+resource "aws_iam_role" "vpc_flow_logs" {
+  name_prefix = "${var.environment}-vpc-flow-logs-"
+
+  assume_role_policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "vpc-flow-logs.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "vpc_flow_logs" {
+  name_prefix = "vpc-flow-logs-"
+  role        = aws_iam_role.vpc_flow_logs.id
+
+  policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:PutLogEvents"
+        ]
+        Resource = [
+          aws_cloudwatch_log_group.vpc_flow_logs.arn,
+          "${aws_cloudwatch_log_group.vpc_flow_logs.arn}:*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_flow_log" "vpc" {
+  iam_role_arn    = aws_iam_role.vpc_flow_logs.arn
+  log_destination = aws_cloudwatch_log_group.vpc_flow_logs.arn
+  traffic_type    = var.flow_log_traffic_type
+  vpc_id          = aws_vpc.main.id
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-vpc-flow-log"
   })
 }
 

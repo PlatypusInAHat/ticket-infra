@@ -102,7 +102,7 @@ variable "secret_rotation_days" {
 variable "log_retention_days" {
   description = "Log retention days"
   type        = number
-  default     = 7
+  default     = 365
 }
 
 variable "mongodb_connection_string" {

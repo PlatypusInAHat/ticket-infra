@@ -11,6 +11,10 @@ terraform {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_partition" "current" {}
+
 # SNS Topic for Alarms
 resource "aws_kms_key" "sns" {
   count = var.sns_kms_key_id == null ? 1 : 0
@@ -18,6 +22,36 @@ resource "aws_kms_key" "sns" {
   description             = "KMS key for ${var.environment} monitoring SNS alarms"
   deletion_window_in_days = var.kms_deletion_window_in_days
   enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      {
+        Sid    = "EnableAccountRootPermissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowSNSUse"
+        Effect = "Allow"
+        Principal = {
+          Service = "sns.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:GenerateDataKey",
+          "kms:ReEncrypt*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 
   tags = var.tags
 }
@@ -31,6 +65,56 @@ resource "aws_kms_alias" "sns" {
 
 locals {
   sns_kms_key_id = var.sns_kms_key_id != null ? var.sns_kms_key_id : aws_kms_key.sns[0].arn
+}
+
+resource "aws_kms_key" "logs" {
+  description             = "KMS key for ${var.environment} CloudWatch log groups"
+  deletion_window_in_days = var.kms_deletion_window_in_days
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      {
+        Sid    = "EnableAccountRootPermissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowCloudWatchLogsUse"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.${var.aws_region}.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:GenerateDataKey",
+          "kms:ReEncrypt*"
+        ]
+        Resource = "*"
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:${data.aws_partition.current.partition}:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:*"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-cloudwatch-logs-kms"
+  })
+}
+
+resource "aws_kms_alias" "logs" {
+  name          = "alias/${var.environment}-cloudwatch-logs"
+  target_key_id = aws_kms_key.logs.key_id
 }
 
 resource "aws_sns_topic" "alarms" {
@@ -52,6 +136,7 @@ resource "aws_cloudwatch_log_group" "log_groups" {
   for_each          = toset(var.log_group_names)
   name              = each.value
   retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.logs.arn
 
   tags = var.tags
 }

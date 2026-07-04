@@ -33,7 +33,7 @@ variable "terraform_state_region" {
 variable "log_retention_days" {
   description = "Log retention days"
   type        = number
-  default     = 7
+  default     = 365
 }
 
 variable "alert_email" {

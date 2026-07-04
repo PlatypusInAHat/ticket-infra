@@ -54,6 +54,36 @@ resource "aws_kms_key" "eks_secrets" {
   deletion_window_in_days = var.kms_deletion_window_in_days
   enable_key_rotation     = true
 
+  policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      {
+        Sid    = "EnableAccountRootPermissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowEKSUse"
+        Effect = "Allow"
+        Principal = {
+          Service = var.eks_service_principal
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:GenerateDataKey",
+          "kms:ReEncrypt*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
   tags = var.tags
 }
 

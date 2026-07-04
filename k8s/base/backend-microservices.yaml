@@ -45,7 +45,7 @@ spec:
       containers:
         - name: api-gateway
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-api-gateway:0.0.0-placeholder
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           command: ["npm", "run", "start:gateway"]
           securityContext:
             allowPrivilegeEscalation: false
@@ -202,6 +202,7 @@ spec:
       containers:
         - name: auth-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-auth-service:0.0.0-placeholder
+          imagePullPolicy: Always
           command: ["npm", "run", "start:auth-service"]
           securityContext:
             allowPrivilegeEscalation: false
@@ -395,6 +396,7 @@ spec:
       containers:
         - name: catalog-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-catalog-service:0.0.0-placeholder
+          imagePullPolicy: Always
           command: ["npm", "run", "start:catalog-service"]
           securityContext:
             allowPrivilegeEscalation: false
@@ -538,6 +540,7 @@ spec:
       containers:
         - name: booking-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-booking-service:0.0.0-placeholder
+          imagePullPolicy: Always
           command: ["npm", "run", "start:booking-service"]
           securityContext:
             allowPrivilegeEscalation: false
@@ -786,6 +789,7 @@ spec:
       containers:
         - name: checkin-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-checkin-service:0.0.0-placeholder
+          imagePullPolicy: Always
           command: ["npm", "run", "start:checkin-service"]
           securityContext:
             allowPrivilegeEscalation: false
@@ -944,6 +948,7 @@ spec:
       containers:
         - name: notification-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-notification-service:0.0.0-placeholder
+          imagePullPolicy: Always
           command: ["npm", "run", "start:notification-service"]
           securityContext:
             allowPrivilegeEscalation: false

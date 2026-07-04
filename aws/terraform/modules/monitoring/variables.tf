@@ -11,7 +11,7 @@ variable "aws_region" {
 variable "log_retention_days" {
   description = "CloudWatch log retention days"
   type        = number
-  default     = 7
+  default     = 365
 }
 
 variable "alert_email" {
@@ -43,6 +43,12 @@ variable "sns_protocol" {
   description = "SNS subscription protocol"
   type        = string
   default     = "email"
+}
+
+variable "iam_policy_version" {
+  description = "IAM policy document version"
+  type        = string
+  default     = "2012-10-17"
 }
 
 # Log Groups

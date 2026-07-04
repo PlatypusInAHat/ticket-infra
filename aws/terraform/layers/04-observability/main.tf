@@ -38,6 +38,7 @@ resource "aws_secretsmanager_secret" "grafana_admin_password" {
   name_prefix             = "${var.environment}/monitoring/grafana-admin-"
   description             = "Grafana admin password for ${var.environment}"
   recovery_window_in_days = 7
+  kms_key_id              = module.monitoring.logs_kms_key_arn
 
   tags = local.common_tags
 }

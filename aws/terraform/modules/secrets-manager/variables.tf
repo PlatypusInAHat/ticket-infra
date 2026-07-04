@@ -18,6 +18,18 @@ variable "secret_rotation_days" {
 variable "log_retention_days" {
   description = "CloudWatch log retention days"
   type        = number
+  default     = 365
+}
+
+variable "kms_key_arn" {
+  description = "Optional existing KMS key ARN for Secrets Manager and audit log encryption. A customer managed key is created when empty."
+  type        = string
+  default     = ""
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "Deletion window for the generated Secrets Manager KMS key"
+  type        = number
   default     = 7
 }
 

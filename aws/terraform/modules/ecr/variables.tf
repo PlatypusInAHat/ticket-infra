@@ -44,7 +44,19 @@ variable "image_tag_mutability" {
 variable "encryption_type" {
   description = "ECR encryption type"
   type        = string
-  default     = "AES256"
+  default     = "KMS"
+}
+
+variable "kms_key_arn" {
+  description = "Optional existing KMS key ARN for ECR repository encryption. A customer managed key is created when empty."
+  type        = string
+  default     = ""
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "Deletion window for the generated ECR KMS key"
+  type        = number
+  default     = 7
 }
 
 # Lifecycle Rules - Single consolidated variable

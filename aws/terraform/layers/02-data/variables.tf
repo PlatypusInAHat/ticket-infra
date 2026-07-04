@@ -155,7 +155,7 @@ variable "enable_cloudwatch_logs" {
 variable "log_retention_days" {
   description = "Log retention days"
   type        = number
-  default     = 7
+  default     = 365
 }
 
 variable "queue_depth_threshold" {
