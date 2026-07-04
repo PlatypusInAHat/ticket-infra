@@ -36,6 +36,24 @@ variable "kubernetes_version" {
   default     = "1.29"
 }
 
+variable "manage_vpc_cni_addon" {
+  description = "Manage the Amazon VPC CNI EKS add-on from Terraform."
+  type        = bool
+  default     = true
+}
+
+variable "vpc_cni_enable_network_policy" {
+  description = "Enable Kubernetes NetworkPolicy enforcement in the Amazon VPC CNI add-on."
+  type        = bool
+  default     = true
+}
+
+variable "vpc_cni_enable_policy_event_logs" {
+  description = "Enable policy event logs for the VPC CNI network policy agent."
+  type        = bool
+  default     = true
+}
+
 # System Node Group
 variable "system_node_group_desired_size" {
   description = "Desired size for system node group"

@@ -14,6 +14,7 @@ spec:
     metadata:
       labels: *gatewayLabels
     spec:
+      serviceAccountName: api-gateway
       automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1
@@ -144,6 +145,7 @@ spec:
     metadata:
       labels: *authLabels
     spec:
+      serviceAccountName: auth-service
       automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1
@@ -320,6 +322,7 @@ spec:
     metadata:
       labels: *catalogLabels
     spec:
+      serviceAccountName: catalog-service
       automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1
@@ -436,6 +439,7 @@ spec:
     metadata:
       labels: *bookingLabels
     spec:
+      serviceAccountName: booking-service
       automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1
@@ -657,6 +661,7 @@ spec:
     metadata:
       labels: *checkinLabels
     spec:
+      serviceAccountName: checkin-service
       automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1
@@ -788,6 +793,7 @@ spec:
     metadata:
       labels: *notificationLabels
     spec:
+      serviceAccountName: notification-service
       automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1

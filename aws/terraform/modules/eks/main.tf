@@ -70,6 +70,33 @@ resource "aws_eks_cluster" "main" {
   tags = var.tags
 }
 
+data "aws_eks_addon_version" "vpc_cni" {
+  count = var.manage_vpc_cni_addon ? 1 : 0
+
+  addon_name         = "vpc-cni"
+  kubernetes_version = aws_eks_cluster.main.version
+  most_recent        = true
+}
+
+resource "aws_eks_addon" "vpc_cni" {
+  count = var.manage_vpc_cni_addon ? 1 : 0
+
+  cluster_name                = aws_eks_cluster.main.name
+  addon_name                  = "vpc-cni"
+  addon_version               = data.aws_eks_addon_version.vpc_cni[0].version
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  configuration_values = jsonencode({
+    enableNetworkPolicy = tostring(var.vpc_cni_enable_network_policy)
+    nodeAgent = {
+      enablePolicyEventLogs = tostring(var.vpc_cni_enable_policy_event_logs)
+    }
+  })
+
+  tags = var.tags
+}
+
 # OIDC Provider for IRSA (IAM Roles for Service Accounts)
 data "tls_certificate" "cluster_oidc" {
   url = aws_eks_cluster.main.identity[0].oidc[0].issuer

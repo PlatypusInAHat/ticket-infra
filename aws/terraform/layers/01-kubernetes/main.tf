@@ -27,6 +27,10 @@ module "eks" {
   public_subnets            = data.terraform_remote_state.networking.outputs.public_subnets
   cluster_security_group_id = data.terraform_remote_state.networking.outputs.eks_cluster_security_group_id
   node_security_group_id    = data.terraform_remote_state.networking.outputs.eks_nodes_security_group_id
+  manage_vpc_cni_addon      = var.manage_vpc_cni_addon
+
+  vpc_cni_enable_network_policy    = var.vpc_cni_enable_network_policy
+  vpc_cni_enable_policy_event_logs = var.vpc_cni_enable_policy_event_logs
 
   # Node group settings
   system_node_group_desired_size   = var.system_node_group_desired_size
