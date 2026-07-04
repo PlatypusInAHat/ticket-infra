@@ -5,8 +5,23 @@ resources:
   - ../../base
 
 images:
-  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-backend
-    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/ticketstage-backend
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-api-gateway
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/api-gateway
+    newTag: prod
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-auth-service
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/auth-service
+    newTag: prod
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-catalog-service
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/catalog-service
+    newTag: prod
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-booking-service
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/booking-service
+    newTag: prod
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-checkin-service
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/checkin-service
+    newTag: prod
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-notification-service
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/notification-service
     newTag: prod
 
 patches:

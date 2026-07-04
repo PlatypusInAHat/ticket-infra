@@ -1,6 +1,13 @@
-output "ecr_backend_repository_url" {
-  description = "ECR backend repository URL"
-  value       = module.ecr.repository_urls["backend"]
+output "ecr_backend_repository_urls" {
+  description = "ECR repository URLs for backend microservices"
+  value = {
+    api_gateway          = module.ecr.repository_urls["api-gateway"]
+    auth_service         = module.ecr.repository_urls["auth-service"]
+    catalog_service      = module.ecr.repository_urls["catalog-service"]
+    booking_service      = module.ecr.repository_urls["booking-service"]
+    checkin_service      = module.ecr.repository_urls["checkin-service"]
+    notification_service = module.ecr.repository_urls["notification-service"]
+  }
 }
 
 output "ecr_frontend_repository_url" {

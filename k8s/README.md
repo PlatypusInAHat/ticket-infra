@@ -45,4 +45,13 @@ kubectl apply -k k8s/overlays/dev
 kubectl apply -k k8s/overlays/prod
 ```
 
-Before deployment, replace `123456789012.dkr.ecr.us-east-1.amazonaws.com/ticketstage-backend` with your real ECR repository.
+Before deployment, replace the placeholder account and region in the overlay image names with your real ECR registry. Backend services use independent repositories, for example:
+
+```text
+123456789012.dkr.ecr.us-east-1.amazonaws.com/dev/api-gateway
+123456789012.dkr.ecr.us-east-1.amazonaws.com/dev/auth-service
+123456789012.dkr.ecr.us-east-1.amazonaws.com/dev/catalog-service
+123456789012.dkr.ecr.us-east-1.amazonaws.com/dev/booking-service
+123456789012.dkr.ecr.us-east-1.amazonaws.com/dev/checkin-service
+123456789012.dkr.ecr.us-east-1.amazonaws.com/dev/notification-service
+```

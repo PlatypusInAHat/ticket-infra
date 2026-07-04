@@ -24,7 +24,15 @@ variable "tags" {
 variable "repository_names" {
   description = "List of ECR repository names"
   type        = list(string)
-  default     = ["backend", "frontend"]
+  default = [
+    "api-gateway",
+    "auth-service",
+    "catalog-service",
+    "booking-service",
+    "checkin-service",
+    "notification-service",
+    "frontend"
+  ]
 }
 
 variable "image_tag_mutability" {
