@@ -43,6 +43,8 @@ spec:
           ports:
             - containerPort: 5000
           envFrom:
+            - configMapRef:
+                name: ticketstage-observability-config
             - secretRef:
                 name: ticketstage-secrets
           env:
@@ -95,13 +97,13 @@ spec:
                   key: NOTIFICATION_SERVICE_URL
           readinessProbe:
             httpGet:
-              path: /api/health
+              path: /health/ready
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /api/health
+              path: /health/live
               port: 5000
             initialDelaySeconds: 30
             periodSeconds: 20
@@ -120,6 +122,9 @@ kind: Service
 metadata:
   name: api-gateway
   namespace: ticketstage
+  labels:
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/part-of: ticketstage
 spec:
   type: ClusterIP
   selector:
@@ -173,6 +178,8 @@ spec:
           ports:
             - containerPort: 5101
           envFrom:
+            - configMapRef:
+                name: ticketstage-observability-config
             - secretRef:
                 name: ticketstage-secrets
           env:
@@ -275,12 +282,12 @@ spec:
                   key: OUTBOX_BATCH_SIZE
           readinessProbe:
             httpGet:
-              path: /health
+              path: /health/ready
               port: 5101
             initialDelaySeconds: 10
           livenessProbe:
             httpGet:
-              path: /health
+              path: /health/live
               port: 5101
             initialDelaySeconds: 30
           resources:
@@ -298,6 +305,9 @@ kind: Service
 metadata:
   name: auth-service
   namespace: ticketstage
+  labels:
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/part-of: ticketstage
 spec:
   selector:
     app.kubernetes.io/name: auth-service
@@ -350,6 +360,8 @@ spec:
           ports:
             - containerPort: 5102
           envFrom:
+            - configMapRef:
+                name: ticketstage-observability-config
             - secretRef:
                 name: ticketstage-secrets
           env:
@@ -392,12 +404,12 @@ spec:
                   key: EVENT_MAX_RETRIES
           readinessProbe:
             httpGet:
-              path: /health
+              path: /health/ready
               port: 5102
             initialDelaySeconds: 10
           livenessProbe:
             httpGet:
-              path: /health
+              path: /health/live
               port: 5102
             initialDelaySeconds: 30
           resources:
@@ -415,6 +427,9 @@ kind: Service
 metadata:
   name: catalog-service
   namespace: ticketstage
+  labels:
+    app.kubernetes.io/name: catalog-service
+    app.kubernetes.io/part-of: ticketstage
 spec:
   selector:
     app.kubernetes.io/name: catalog-service
@@ -467,6 +482,8 @@ spec:
           ports:
             - containerPort: 5103
           envFrom:
+            - configMapRef:
+                name: ticketstage-observability-config
             - secretRef:
                 name: ticketstage-secrets
           env:
@@ -614,12 +631,12 @@ spec:
                   key: OUTBOX_BATCH_SIZE
           readinessProbe:
             httpGet:
-              path: /health
+              path: /health/ready
               port: 5103
             initialDelaySeconds: 10
           livenessProbe:
             httpGet:
-              path: /health
+              path: /health/live
               port: 5103
             initialDelaySeconds: 30
           resources:
@@ -637,6 +654,9 @@ kind: Service
 metadata:
   name: booking-service
   namespace: ticketstage
+  labels:
+    app.kubernetes.io/name: booking-service
+    app.kubernetes.io/part-of: ticketstage
 spec:
   selector:
     app.kubernetes.io/name: booking-service
@@ -689,6 +709,8 @@ spec:
           ports:
             - containerPort: 5104
           envFrom:
+            - configMapRef:
+                name: ticketstage-observability-config
             - secretRef:
                 name: ticketstage-secrets
           env:
@@ -746,12 +768,12 @@ spec:
                   key: OUTBOX_BATCH_SIZE
           readinessProbe:
             httpGet:
-              path: /health
+              path: /health/ready
               port: 5104
             initialDelaySeconds: 10
           livenessProbe:
             httpGet:
-              path: /health
+              path: /health/live
               port: 5104
             initialDelaySeconds: 30
           resources:
@@ -769,6 +791,9 @@ kind: Service
 metadata:
   name: checkin-service
   namespace: ticketstage
+  labels:
+    app.kubernetes.io/name: checkin-service
+    app.kubernetes.io/part-of: ticketstage
 spec:
   selector:
     app.kubernetes.io/name: checkin-service
@@ -821,6 +846,8 @@ spec:
           ports:
             - containerPort: 5105
           envFrom:
+            - configMapRef:
+                name: ticketstage-observability-config
             - secretRef:
                 name: ticketstage-secrets
           env:
@@ -908,12 +935,12 @@ spec:
                   key: EMAIL_WORKER_BATCH_SIZE
           readinessProbe:
             httpGet:
-              path: /health
+              path: /health/ready
               port: 5105
             initialDelaySeconds: 10
           livenessProbe:
             httpGet:
-              path: /health
+              path: /health/live
               port: 5105
             initialDelaySeconds: 30
           resources:
@@ -931,6 +958,9 @@ kind: Service
 metadata:
   name: notification-service
   namespace: ticketstage
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/part-of: ticketstage
 spec:
   selector:
     app.kubernetes.io/name: notification-service

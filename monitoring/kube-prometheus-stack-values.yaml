@@ -1,6 +1,21 @@
 grafana:
   enabled: true
   defaultDashboardsTimezone: Asia/Ho_Chi_Minh
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: ALL
+  additionalDataSources:
+    - name: Tempo
+      type: tempo
+      access: proxy
+      url: http://tempo.monitoring.svc.cluster.local:3200
+      jsonData:
+        tracesToLogsV2:
+          datasourceUid: prometheus
+        serviceMap:
+          datasourceUid: prometheus
   persistence:
     enabled: true
     size: 5Gi
@@ -14,6 +29,14 @@ prometheus:
   prometheusSpec:
     retention: 7d
     retentionSize: 20GB
+    serviceMonitorSelector:
+      matchLabels:
+        release: kube-prometheus-stack
+    serviceMonitorNamespaceSelector: {}
+    ruleSelector:
+      matchLabels:
+        release: kube-prometheus-stack
+    ruleNamespaceSelector: {}
     scrapeInterval: 30s
     evaluationInterval: 30s
     resources:

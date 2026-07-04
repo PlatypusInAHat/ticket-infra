@@ -75,6 +75,7 @@ resource "helm_release" "kube_prometheus_stack" {
   name             = "kube-prometheus-stack"
   repository       = "https://prometheus-community.github.io/helm-charts"
   chart            = "kube-prometheus-stack"
+  version          = "87.6.0"
   namespace        = "monitoring"
   create_namespace = true
 
@@ -84,6 +85,30 @@ resource "helm_release" "kube_prometheus_stack" {
     name  = "grafana.adminPassword"
     value = random_password.grafana_admin.result
   }
+}
+
+resource "helm_release" "tempo" {
+  name       = "tempo"
+  repository = "https://grafana.github.io/helm-charts"
+  chart      = "tempo"
+  version    = "1.24.4"
+  namespace  = "monitoring"
+
+  values = [file("${path.module}/../../../../monitoring/tempo-values.yaml")]
+
+  depends_on = [helm_release.kube_prometheus_stack]
+}
+
+resource "helm_release" "opentelemetry_collector" {
+  name       = "opentelemetry-collector"
+  repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
+  chart      = "opentelemetry-collector"
+  version    = "0.162.0"
+  namespace  = "monitoring"
+
+  values = [file("${path.module}/../../../../monitoring/opentelemetry-collector-values.yaml")]
+
+  depends_on = [helm_release.tempo]
 }
 
 locals {

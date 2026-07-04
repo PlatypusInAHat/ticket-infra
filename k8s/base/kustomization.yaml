@@ -6,6 +6,9 @@ resources:
   - configmap.yaml
   - backend-microservices.yaml
   - networkpolicies.yaml
+  - servicemonitor.yaml
+  - prometheus-rules.yaml
+  - grafana-dashboard-ticketstage-services.yaml
   - hpa.yaml
   - pdb.yaml
   - ingress-aws-alb.yaml

@@ -49,3 +49,15 @@ data:
   EMAIL_WORKER_ENABLED: "true"
   EMAIL_WORKER_INTERVAL_MS: "5000"
   EMAIL_WORKER_BATCH_SIZE: "10"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ticketstage-observability-config
+  namespace: ticketstage
+data:
+  OTEL_ENABLED: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://opentelemetry-collector.monitoring.svc.cluster.local:4318"
+  OTEL_TRACES_SAMPLER: "parentbased_traceidratio"
+  OTEL_TRACES_SAMPLER_ARG: "0.2"
+  OTEL_RESOURCE_ATTRIBUTES: "service.namespace=ticketstage,deployment.environment=production"

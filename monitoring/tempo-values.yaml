@@ -1,0 +1,19 @@
+tempo:
+  retention: 24h
+
+persistence:
+  enabled: true
+  size: 10Gi
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: kube-prometheus-stack
