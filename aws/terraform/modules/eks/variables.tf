@@ -44,19 +44,25 @@ variable "endpoint_private_access" {
 variable "endpoint_public_access" {
   description = "Enable public API server endpoint"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "cluster_endpoint_public_access_cidrs" {
   description = "List of CIDR blocks that can access the cluster endpoint"
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default     = []
 }
 
 variable "cluster_log_types" {
   description = "List of log types to enable for cluster logging"
   type        = list(string)
   default     = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "Deletion window for the EKS secret encryption KMS key"
+  type        = number
+  default     = 7
 }
 
 variable "oidc_client_id" {

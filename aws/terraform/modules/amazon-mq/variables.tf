@@ -124,15 +124,7 @@ variable "mq_egress_rules" {
     cidr_blocks = list(string)
     description = optional(string)
   }))
-  default = [
-    {
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "Allow all outbound traffic"
-    }
-  ]
+  default = []
 }
 
 # Engine Configuration

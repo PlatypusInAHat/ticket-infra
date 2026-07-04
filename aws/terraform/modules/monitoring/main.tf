@@ -12,9 +12,30 @@ terraform {
 }
 
 # SNS Topic for Alarms
+resource "aws_kms_key" "sns" {
+  count = var.sns_kms_key_id == null ? 1 : 0
+
+  description             = "KMS key for ${var.environment} monitoring SNS alarms"
+  deletion_window_in_days = var.kms_deletion_window_in_days
+  enable_key_rotation     = true
+
+  tags = var.tags
+}
+
+resource "aws_kms_alias" "sns" {
+  count = var.sns_kms_key_id == null ? 1 : 0
+
+  name          = "alias/${var.environment}-monitoring-sns"
+  target_key_id = aws_kms_key.sns[0].key_id
+}
+
+locals {
+  sns_kms_key_id = var.sns_kms_key_id != null ? var.sns_kms_key_id : aws_kms_key.sns[0].arn
+}
+
 resource "aws_sns_topic" "alarms" {
   name_prefix       = "${var.environment}-alarms-"
-  kms_master_key_id = var.sns_kms_key_id
+  kms_master_key_id = local.sns_kms_key_id
 
   tags = var.tags
 }

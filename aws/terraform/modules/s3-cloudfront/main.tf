@@ -20,6 +20,28 @@ resource "aws_s3_bucket" "frontend" {
 
 data "aws_caller_identity" "current" {}
 
+resource "aws_kms_key" "frontend" {
+  count = var.kms_key_arn == "" ? 1 : 0
+
+  description             = "KMS key for ${var.environment} frontend bucket encryption"
+  deletion_window_in_days = var.kms_deletion_window_in_days
+  enable_key_rotation     = true
+
+  tags = var.tags
+}
+
+resource "aws_kms_alias" "frontend" {
+  count = var.kms_key_arn == "" ? 1 : 0
+
+  name          = "alias/${var.environment}-frontend-s3"
+  target_key_id = aws_kms_key.frontend[0].key_id
+}
+
+locals {
+  frontend_kms_key_arn   = var.kms_key_arn != "" ? var.kms_key_arn : aws_kms_key.frontend[0].arn
+  cloudfront_web_acl_arn = var.cloudfront_web_acl_arn != "" ? var.cloudfront_web_acl_arn : aws_wafv2_web_acl.frontend[0].arn
+}
+
 # Block all public access
 resource "aws_s3_bucket_public_access_block" "frontend" {
   bucket = aws_s3_bucket.frontend.id
@@ -45,8 +67,11 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "frontend" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = var.sse_algorithm
+      kms_master_key_id = local.frontend_kms_key_arn
+      sse_algorithm     = var.sse_algorithm
     }
+
+    bucket_key_enabled = true
   }
 }
 
@@ -91,6 +116,48 @@ resource "aws_cloudfront_origin_access_identity" "frontend" {
   comment = "OAI for ${var.environment} frontend"
 }
 
+resource "aws_wafv2_web_acl" "frontend" {
+  count = var.cloudfront_web_acl_arn == "" ? 1 : 0
+
+  name        = "${var.environment}-frontend-cloudfront"
+  description = "Baseline WAF for ${var.environment} CloudFront distribution"
+  scope       = "CLOUDFRONT"
+
+  default_action {
+    allow {}
+  }
+
+  rule {
+    name     = "AWSManagedRulesCommonRuleSet"
+    priority = 1
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.environment}-frontend-common"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "${var.environment}-frontend"
+    sampled_requests_enabled   = true
+  }
+
+  tags = var.tags
+}
+
 # S3 Bucket Policy - Allow CloudFront OAI
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = aws_s3_bucket.frontend.id
@@ -127,6 +194,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   default_root_object = var.default_root_object
   http_version        = var.http_version
   aliases             = var.custom_domain != "" ? [var.custom_domain] : []
+  web_acl_id          = local.cloudfront_web_acl_arn
 
   # Cache behavior for static assets
   default_cache_behavior {

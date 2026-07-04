@@ -16,6 +16,13 @@ spec:
     spec:
       serviceAccountName: api-gateway
       automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -40,8 +47,19 @@ spec:
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-api-gateway:0.0.0-placeholder
           imagePullPolicy: IfNotPresent
           command: ["npm", "run", "start:gateway"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 5000
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           envFrom:
             - configMapRef:
                 name: ticketstage-observability-config
@@ -116,6 +134,9 @@ spec:
               cpu: 500m
               memory: 512Mi
               ephemeral-storage: 1Gi
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -152,6 +173,13 @@ spec:
     spec:
       serviceAccountName: auth-service
       automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -175,8 +203,19 @@ spec:
         - name: auth-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-auth-service:0.0.0-placeholder
           command: ["npm", "run", "start:auth-service"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 5101
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           envFrom:
             - configMapRef:
                 name: ticketstage-observability-config
@@ -225,16 +264,6 @@ spec:
                 configMapKeyRef:
                   name: ticketstage-config
                   key: JWT_REFRESH_EXPIRE
-            - name: PASSWORD_HASH_ROUNDS
-              valueFrom:
-                configMapKeyRef:
-                  name: ticketstage-config
-                  key: PASSWORD_HASH_ROUNDS
-            - name: MIN_PASSWORD_LENGTH
-              valueFrom:
-                configMapKeyRef:
-                  name: ticketstage-config
-                  key: MIN_PASSWORD_LENGTH
             - name: RATE_LIMIT_ENABLED
               valueFrom:
                 configMapKeyRef:
@@ -299,6 +328,9 @@ spec:
               cpu: 500m
               memory: 512Mi
               ephemeral-storage: 1Gi
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -334,6 +366,13 @@ spec:
     spec:
       serviceAccountName: catalog-service
       automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -357,8 +396,19 @@ spec:
         - name: catalog-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-catalog-service:0.0.0-placeholder
           command: ["npm", "run", "start:catalog-service"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 5102
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           envFrom:
             - configMapRef:
                 name: ticketstage-observability-config
@@ -421,6 +471,9 @@ spec:
               cpu: 500m
               memory: 512Mi
               ephemeral-storage: 1Gi
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -456,6 +509,13 @@ spec:
     spec:
       serviceAccountName: booking-service
       automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -479,8 +539,19 @@ spec:
         - name: booking-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-booking-service:0.0.0-placeholder
           command: ["npm", "run", "start:booking-service"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 5103
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           envFrom:
             - configMapRef:
                 name: ticketstage-observability-config
@@ -648,6 +719,9 @@ spec:
               cpu: "1"
               memory: 768Mi
               ephemeral-storage: 2Gi
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -683,6 +757,13 @@ spec:
     spec:
       serviceAccountName: checkin-service
       automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -706,8 +787,19 @@ spec:
         - name: checkin-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-checkin-service:0.0.0-placeholder
           command: ["npm", "run", "start:checkin-service"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 5104
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           envFrom:
             - configMapRef:
                 name: ticketstage-observability-config
@@ -785,6 +877,9 @@ spec:
               cpu: 500m
               memory: 512Mi
               ephemeral-storage: 1Gi
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -820,6 +915,13 @@ spec:
     spec:
       serviceAccountName: notification-service
       automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -843,8 +945,19 @@ spec:
         - name: notification-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-notification-service:0.0.0-placeholder
           command: ["npm", "run", "start:notification-service"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 5105
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           envFrom:
             - configMapRef:
                 name: ticketstage-observability-config
@@ -952,6 +1065,9 @@ spec:
               cpu: 300m
               memory: 384Mi
               ephemeral-storage: 1Gi
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

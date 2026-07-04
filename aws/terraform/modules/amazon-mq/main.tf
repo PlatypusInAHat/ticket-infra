@@ -12,6 +12,18 @@ terraform {
 }
 
 # Security Group for MQ
+locals {
+  mq_egress_rules = length(var.mq_egress_rules) > 0 ? var.mq_egress_rules : [
+    {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = [var.vpc_cidr]
+      description = "Allow outbound traffic within the VPC only"
+    }
+  ]
+}
+
 resource "aws_security_group" "mq" {
   name_prefix = var.sg_name_prefix
   description = var.sg_description
@@ -32,7 +44,7 @@ resource "aws_security_group" "mq" {
 
   # Dynamic egress rules
   dynamic "egress" {
-    for_each = var.mq_egress_rules
+    for_each = local.mq_egress_rules
     content {
       from_port   = egress.value.from_port
       to_port     = egress.value.to_port

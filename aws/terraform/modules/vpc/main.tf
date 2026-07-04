@@ -149,7 +149,8 @@ resource "aws_security_group" "eks_cluster" {
     from_port   = var.egress_from_port
     to_port     = var.egress_to_port
     protocol    = var.egress_protocol
-    cidr_blocks = [var.default_route_cidr]
+    cidr_blocks = [var.vpc_cidr]
+    description = "Allow cluster control plane outbound traffic inside the VPC"
   }
 
   tags = merge(var.tags, {
@@ -179,7 +180,8 @@ resource "aws_security_group" "eks_nodes" {
     from_port   = var.egress_from_port
     to_port     = var.egress_to_port
     protocol    = var.egress_protocol
-    cidr_blocks = [var.default_route_cidr]
+    cidr_blocks = [var.vpc_cidr]
+    description = "Allow node outbound traffic inside the VPC"
   }
 
   tags = merge(var.tags, {

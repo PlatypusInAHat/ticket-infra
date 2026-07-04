@@ -93,7 +93,19 @@ variable "versioning_status" {
 variable "sse_algorithm" {
   description = "Server-side encryption algorithm"
   type        = string
-  default     = "AES256"
+  default     = "aws:kms"
+}
+
+variable "kms_key_arn" {
+  description = "Optional existing KMS key ARN for frontend bucket encryption. A customer managed key is created when empty."
+  type        = string
+  default     = ""
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "Deletion window for the generated frontend bucket KMS key"
+  type        = number
+  default     = 7
 }
 
 # S3 Lifecycle
@@ -176,6 +188,12 @@ variable "cloudfront_enabled" {
   description = "Enable CloudFront distribution"
   type        = bool
   default     = true
+}
+
+variable "cloudfront_web_acl_arn" {
+  description = "Optional existing WAFv2 WebACL ARN for CloudFront. A baseline WebACL is created when empty."
+  type        = string
+  default     = ""
 }
 
 variable "is_ipv6_enabled" {

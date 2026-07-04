@@ -49,6 +49,19 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
   role       = aws_iam_role.eks_cluster_role.name
 }
 
+resource "aws_kms_key" "eks_secrets" {
+  description             = "KMS key for ${var.cluster_name} Kubernetes secret encryption"
+  deletion_window_in_days = var.kms_deletion_window_in_days
+  enable_key_rotation     = true
+
+  tags = var.tags
+}
+
+resource "aws_kms_alias" "eks_secrets" {
+  name          = "alias/${var.cluster_name}-eks-secrets"
+  target_key_id = aws_kms_key.eks_secrets.key_id
+}
+
 # EKS Cluster
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
@@ -64,6 +77,14 @@ resource "aws_eks_cluster" "main" {
   }
 
   enabled_cluster_log_types = var.cluster_log_types
+
+  encryption_config {
+    provider {
+      key_arn = aws_kms_key.eks_secrets.arn
+    }
+
+    resources = ["secrets"]
+  }
 
   depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
 

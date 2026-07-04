@@ -30,7 +30,13 @@ variable "tags" {
 variable "sns_kms_key_id" {
   description = "KMS key ID for SNS encryption"
   type        = string
-  default     = "alias/aws/sns"
+  default     = null
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "Deletion window for monitoring KMS keys"
+  type        = number
+  default     = 7
 }
 
 variable "sns_protocol" {
