@@ -14,6 +14,7 @@ spec:
     metadata:
       labels: *gatewayLabels
     spec:
+      automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -107,9 +108,11 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
+              ephemeral-storage: 256Mi
             limits:
               cpu: 500m
               memory: 512Mi
+              ephemeral-storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -141,6 +144,7 @@ spec:
     metadata:
       labels: *authLabels
     spec:
+      automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -281,9 +285,11 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
+              ephemeral-storage: 256Mi
             limits:
               cpu: 500m
               memory: 512Mi
+              ephemeral-storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -314,6 +320,7 @@ spec:
     metadata:
       labels: *catalogLabels
     spec:
+      automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -394,9 +401,11 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
+              ephemeral-storage: 256Mi
             limits:
               cpu: 500m
               memory: 512Mi
+              ephemeral-storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -427,6 +436,7 @@ spec:
     metadata:
       labels: *bookingLabels
     spec:
+      automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -612,9 +622,11 @@ spec:
             requests:
               cpu: 200m
               memory: 256Mi
+              ephemeral-storage: 512Mi
             limits:
               cpu: "1"
               memory: 768Mi
+              ephemeral-storage: 2Gi
 ---
 apiVersion: v1
 kind: Service
@@ -645,6 +657,7 @@ spec:
     metadata:
       labels: *checkinLabels
     spec:
+      automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -740,9 +753,11 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
+              ephemeral-storage: 256Mi
             limits:
               cpu: 500m
               memory: 512Mi
+              ephemeral-storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -773,6 +788,7 @@ spec:
     metadata:
       labels: *notificationLabels
     spec:
+      automountServiceAccountToken: false
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -898,9 +914,11 @@ spec:
             requests:
               cpu: 50m
               memory: 128Mi
+              ephemeral-storage: 256Mi
             limits:
               cpu: 300m
               memory: 384Mi
+              ephemeral-storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
