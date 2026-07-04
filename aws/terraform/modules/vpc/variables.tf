@@ -61,39 +61,6 @@ variable "default_route_cidr" {
   default     = "0.0.0.0/0"
 }
 
-variable "alb_sg_description" {
-  description = "Description for ALB security group"
-  type        = string
-  default     = "Security group for ALB"
-}
-
-variable "alb_ingress_rules" {
-  description = "Ingress rules for ALB security group"
-  type = list(object({
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    cidr_blocks = list(string)
-    description = string
-  }))
-  default = [
-    {
-      from_port   = 80
-      to_port     = 80
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "HTTP"
-    },
-    {
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "HTTPS"
-    }
-  ]
-}
-
 variable "egress_from_port" {
   description = "Egress from port"
   type        = number

@@ -140,7 +140,9 @@ resource "aws_eks_node_group" "system_on_demand" {
   }
 
   tags = merge(var.tags, {
-    "karpenter.sh/do-not-evict" = tostring(var.karpenter_evict_enabled)
+    "karpenter.sh/do-not-evict"                     = tostring(var.karpenter_evict_enabled)
+    "k8s.io/cluster-autoscaler/enabled"             = "true"
+    "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
   })
 
   depends_on = [
@@ -176,7 +178,9 @@ resource "aws_eks_node_group" "app_spot" {
   )
 
   tags = merge(var.tags, {
-    "karpenter.sh/do-not-evict" = tostring(var.karpenter_evict_enabled)
+    "karpenter.sh/do-not-evict"                     = tostring(var.karpenter_evict_enabled)
+    "k8s.io/cluster-autoscaler/enabled"             = "true"
+    "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
   })
 
   depends_on = [

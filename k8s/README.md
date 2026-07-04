@@ -23,6 +23,19 @@ kubectl create secret generic ticketstage-secrets \
 
 Prefer External Secrets or Sealed Secrets for real deployments.
 
+## HPA prerequisites
+
+HPA needs `metrics-server` in the cluster. After deploying the infra layer, verify it with:
+
+```bash
+kubectl get deployment -n kube-system metrics-server
+kubectl get apiservices | findstr metrics.k8s.io
+kubectl top pods -n ticketstage
+kubectl get hpa -n ticketstage
+```
+
+If `kubectl top` returns data, HPA can read metrics and scale services.
+
 ## Images
 
 Use overlays to replace the base placeholder image:

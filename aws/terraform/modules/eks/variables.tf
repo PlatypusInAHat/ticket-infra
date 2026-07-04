@@ -29,6 +29,12 @@ variable "cluster_security_group_id" {
   type        = string
 }
 
+variable "node_security_group_id" {
+  description = "Security group ID for EKS worker nodes"
+  type        = string
+  default     = ""
+}
+
 variable "endpoint_private_access" {
   description = "Enable private API server endpoint"
   type        = bool

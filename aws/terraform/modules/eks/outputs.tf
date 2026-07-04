@@ -46,5 +46,5 @@ output "node_role_arn" {
 
 output "node_security_group_id" {
   description = "Security group ID for nodes"
-  value       = ""
+  value       = var.node_security_group_id
 }
