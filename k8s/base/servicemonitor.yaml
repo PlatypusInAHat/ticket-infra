@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ticketstage-services
+  namespace: ticketstage
+  labels:
+    release: kube-prometheus-stack
+    app.kubernetes.io/name: ticketstage-services
+    app.kubernetes.io/part-of: ticketstage
+spec:
+  namespaceSelector:
+    matchNames:
+      - ticketstage
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: ticketstage
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

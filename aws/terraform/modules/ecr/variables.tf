@@ -24,7 +24,15 @@ variable "tags" {
 variable "repository_names" {
   description = "List of ECR repository names"
   type        = list(string)
-  default     = ["backend", "frontend"]
+  default = [
+    "api-gateway",
+    "auth-service",
+    "catalog-service",
+    "booking-service",
+    "checkin-service",
+    "notification-service",
+    "frontend"
+  ]
 }
 
 variable "image_tag_mutability" {
@@ -36,7 +44,19 @@ variable "image_tag_mutability" {
 variable "encryption_type" {
   description = "ECR encryption type"
   type        = string
-  default     = "AES256"
+  default     = "KMS"
+}
+
+variable "kms_key_arn" {
+  description = "Optional existing KMS key ARN for ECR repository encryption. A customer managed key is created when empty."
+  type        = string
+  default     = ""
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "Deletion window for the generated ECR KMS key"
+  type        = number
+  default     = 7
 }
 
 # Lifecycle Rules - Single consolidated variable
@@ -53,9 +73,9 @@ variable "lifecycle_rules" {
   }))
   default = [
     {
-      description  = "Keep last 30 images tagged with version"
+      description  = "Keep last 30 release and CI images"
       tag_status   = "tagged"
-      tag_prefixes = ["v", "release"]
+      tag_prefixes = ["v", "release", "dev-", "staging-", "main-", "prod-", "sha-"]
       count_type   = "imageCountMoreThan"
       count_number = 30
       action_type  = "expire"

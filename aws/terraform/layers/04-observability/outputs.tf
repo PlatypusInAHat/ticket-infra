@@ -17,3 +17,8 @@ output "metric_alarm_names" {
   description = "Map of metric alarm names"
   value       = module.monitoring.metric_alarm_names
 }
+
+output "grafana_admin_secret_arn" {
+  description = "Secrets Manager ARN for the Grafana admin password"
+  value       = aws_secretsmanager_secret.grafana_admin_password.arn
+}

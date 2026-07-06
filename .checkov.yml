@@ -1,0 +1,31 @@
+# Checkov baseline for this cost-optimized dev/staging architecture.
+# Security-critical controls are implemented in Terraform; the checks below are
+# intentionally deferred because they either require production-only spend,
+# manual deployment inputs, or a runtime refactor outside the infra layer.
+skip-check:
+  # Manual infra operations intentionally use constrained enum inputs for layer/action/env.
+  - CKV_GHA_7
+  # SARIF upload requires security-events: write on the audit job.
+  - CKV2_GHA_1
+  # Cross-region DR and active-active static hosting are not enabled for cost-optimized dev/staging.
+  - CKV_AWS_144
+  - CKV_AWS_310
+  # Frontend is global by design; geo blocking is a business decision, not a default control.
+  - CKV_AWS_374
+  # Custom cert is only required when custom_domain/acm_certificate_arn are configured.
+  - CKV2_AWS_42
+  # Frontend bucket does not need event notifications in the current architecture.
+  - CKV2_AWS_62
+  # Automatic rotation needs provider-specific rotation Lambdas and is tracked as a prod hardening item.
+  - CKV2_AWS_57
+  # Images are promoted by immutable tags in CI/CD; digest pinning requires environment-specific deploy metadata.
+  - CKV_K8S_43
+  # The Node.js services currently consume External Secrets as environment variables.
+  - CKV_K8S_35
+  # EKS managed node groups create provider-managed security group attachments unless launch templates are introduced.
+  - CKV2_AWS_5
+  # Dedicated access-log buckets use ACL-compatible ownership and SSE-S3 for AWS log-delivery compatibility.
+  - CKV2_AWS_65
+  - CKV_AWS_145
+  # The WebACL includes AWSManagedRulesKnownBadInputsRuleSet, but Checkov cannot resolve the conditional local ARN.
+  - CKV2_AWS_47

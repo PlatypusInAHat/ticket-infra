@@ -11,6 +11,48 @@ terraform {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_partition" "current" {}
+
+resource "aws_kms_key" "ecr" {
+  count = var.kms_key_arn == "" ? 1 : 0
+
+  description             = "KMS key for ${var.environment} ECR repositories"
+  deletion_window_in_days = var.kms_deletion_window_in_days
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      {
+        Sid    = "EnableAccountRootPermissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-ecr-kms"
+  })
+}
+
+resource "aws_kms_alias" "ecr" {
+  count = var.kms_key_arn == "" ? 1 : 0
+
+  name          = "alias/${var.environment}-ecr"
+  target_key_id = aws_kms_key.ecr[0].key_id
+}
+
+locals {
+  ecr_kms_key_arn = var.kms_key_arn != "" ? var.kms_key_arn : aws_kms_key.ecr[0].arn
+}
+
 # ECR Repositories - Dynamic creation using for_each
 resource "aws_ecr_repository" "repositories" {
   for_each             = toset(var.repository_names)
@@ -22,7 +64,8 @@ resource "aws_ecr_repository" "repositories" {
   }
 
   encryption_configuration {
-    encryption_type = var.encryption_type
+    encryption_type = "KMS"
+    kms_key         = local.ecr_kms_key_arn
   }
 
   tags = merge(var.tags, {

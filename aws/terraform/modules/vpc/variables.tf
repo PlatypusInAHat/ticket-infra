@@ -46,7 +46,7 @@ variable "enable_dns_support" {
 variable "map_public_ip_on_launch" {
   description = "Map public IP on launch for public subnets"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "eip_domain" {
@@ -59,39 +59,6 @@ variable "default_route_cidr" {
   description = "Default route CIDR block (0.0.0.0/0)"
   type        = string
   default     = "0.0.0.0/0"
-}
-
-variable "alb_sg_description" {
-  description = "Description for ALB security group"
-  type        = string
-  default     = "Security group for ALB"
-}
-
-variable "alb_ingress_rules" {
-  description = "Ingress rules for ALB security group"
-  type = list(object({
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    cidr_blocks = list(string)
-    description = string
-  }))
-  default = [
-    {
-      from_port   = 80
-      to_port     = 80
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "HTTP"
-    },
-    {
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "HTTPS"
-    }
-  ]
 }
 
 variable "egress_from_port" {
@@ -167,4 +134,34 @@ variable "tags" {
   description = "Common tags for resources"
   type        = map(string)
   default     = {}
+}
+
+variable "flow_log_group_name_prefix" {
+  description = "CloudWatch log group prefix for VPC flow logs"
+  type        = string
+  default     = "/aws/vpc/flow-logs"
+}
+
+variable "flow_log_retention_days" {
+  description = "CloudWatch retention days for VPC flow logs"
+  type        = number
+  default     = 365
+}
+
+variable "flow_log_traffic_type" {
+  description = "Traffic type captured by VPC flow logs"
+  type        = string
+  default     = "ALL"
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "Deletion window for generated VPC flow log KMS key"
+  type        = number
+  default     = 7
+}
+
+variable "iam_policy_version" {
+  description = "IAM policy document version"
+  type        = string
+  default     = "2012-10-17"
 }

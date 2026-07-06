@@ -17,3 +17,8 @@ output "metric_alarm_names" {
   description = "Map of metric alarm names"
   value       = { for k, v in aws_cloudwatch_metric_alarm.metric_alarms : k => v.alarm_name }
 }
+
+output "logs_kms_key_arn" {
+  description = "KMS key ARN used for CloudWatch log groups and observability secrets"
+  value       = aws_kms_key.logs.arn
+}

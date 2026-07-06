@@ -1,0 +1,44 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+images:
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-api-gateway
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/api-gateway
+    newTag: prod
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-auth-service
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/auth-service
+    newTag: prod
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-catalog-service
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/catalog-service
+    newTag: prod
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-booking-service
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/booking-service
+    newTag: prod
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-checkin-service
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/checkin-service
+    newTag: prod
+  - name: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-notification-service
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/prod/notification-service
+    newTag: prod
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: ticketstage-config
+    patch: |-
+      - op: replace
+        path: /data/FRONTEND_URL
+        value: https://www.ticketstage.example.com
+      - op: replace
+        path: /data/PUBLIC_API_URL
+        value: https://api.ticketstage.example.com
+  - target:
+      kind: Ingress
+      name: ticketstage-api
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: api.ticketstage.example.com

@@ -6,26 +6,14 @@
 # - OIDC provider for IRSA (IAM Roles for Service Accounts)
 # - Cluster autoscaler IAM role
 
-terraform {
-  required_version = ">= 1.5"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.25"
-    }
-  }
-}
-
 # Data source for networking layer outputs
 data "terraform_remote_state" "networking" {
-  backend = "local"
+  backend = "s3"
 
   config = {
-    path = "${path.module}/../00-networking/terraform.tfstate"
+    bucket = var.terraform_state_bucket
+    key    = "${var.environment}/00-networking/terraform.tfstate"
+    region = var.terraform_state_region
   }
 }
 
@@ -38,6 +26,11 @@ module "eks" {
   private_subnets           = data.terraform_remote_state.networking.outputs.private_subnets
   public_subnets            = data.terraform_remote_state.networking.outputs.public_subnets
   cluster_security_group_id = data.terraform_remote_state.networking.outputs.eks_cluster_security_group_id
+  node_security_group_id    = data.terraform_remote_state.networking.outputs.eks_nodes_security_group_id
+  manage_vpc_cni_addon      = var.manage_vpc_cni_addon
+
+  vpc_cni_enable_network_policy    = var.vpc_cni_enable_network_policy
+  vpc_cni_enable_policy_event_logs = var.vpc_cni_enable_policy_event_logs
 
   # Node group settings
   system_node_group_desired_size   = var.system_node_group_desired_size
@@ -65,24 +58,83 @@ provider "kubernetes" {
   }
 }
 
-# Cluster Autoscaler Helm Chart (optional - can be installed later)
-# resource "helm_release" "cluster_autoscaler" {
-#   name       = "cluster-autoscaler"
-#   repository = "https://kubernetes.github.io/autoscaler"
-#   chart      = "cluster-autoscaler"
-#   namespace  = "kube-system"
-#   version    = "9.29.0"
-#
-#   values = [
-#     templatefile("${path.module}/cluster-autoscaler-values.yaml", {
-#       aws_region       = var.aws_region
-#       cluster_name     = module.eks.cluster_id
-#       role_arn         = module.eks.cluster_autoscaler_iam_role_arn
-#     })
-#   ]
-#
-#   depends_on = [module.eks]
-# }
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_id]
+    }
+  }
+}
+
+resource "helm_release" "metrics_server" {
+  name       = "metrics-server"
+  repository = "https://kubernetes-sigs.github.io/metrics-server/"
+  chart      = "metrics-server"
+  namespace  = "kube-system"
+  version    = "3.12.1"
+
+  set {
+    name  = "replicas"
+    value = "2"
+  }
+
+  set {
+    name  = "args[0]"
+    value = "--kubelet-insecure-tls"
+  }
+
+  set {
+    name  = "args[1]"
+    value = "--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname"
+  }
+
+  depends_on = [module.eks]
+}
+
+resource "helm_release" "cluster_autoscaler" {
+  name       = "cluster-autoscaler"
+  repository = "https://kubernetes.github.io/autoscaler"
+  chart      = "cluster-autoscaler"
+  namespace  = "kube-system"
+  version    = "9.29.0"
+
+  set {
+    name  = "autoDiscovery.clusterName"
+    value = module.eks.cluster_id
+  }
+
+  set {
+    name  = "awsRegion"
+    value = var.aws_region
+  }
+
+  set {
+    name  = "rbac.serviceAccount.name"
+    value = "cluster-autoscaler"
+  }
+
+  set {
+    name  = "rbac.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.eks.cluster_autoscaler_iam_role_arn
+  }
+
+  set {
+    name  = "extraArgs.expander"
+    value = "least-waste"
+  }
+
+  set {
+    name  = "extraArgs.balance-similar-node-groups"
+    value = "true"
+  }
+
+  depends_on = [module.eks]
+}
 
 locals {
   common_tags = merge(

@@ -93,7 +93,19 @@ variable "versioning_status" {
 variable "sse_algorithm" {
   description = "Server-side encryption algorithm"
   type        = string
-  default     = "AES256"
+  default     = "aws:kms"
+}
+
+variable "kms_key_arn" {
+  description = "Optional existing KMS key ARN for frontend bucket encryption. A customer managed key is created when empty."
+  type        = string
+  default     = ""
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "Deletion window for the generated frontend bucket KMS key"
+  type        = number
+  default     = 7
 }
 
 # S3 Lifecycle
@@ -125,6 +137,18 @@ variable "noncurrent_expiration_days" {
   description = "Days before expiring noncurrent versions"
   type        = number
   default     = 90
+}
+
+variable "abort_incomplete_multipart_upload_days" {
+  description = "Days before aborting incomplete multipart uploads"
+  type        = number
+  default     = 7
+}
+
+variable "access_log_expiration_days" {
+  description = "Days before expiring frontend access logs"
+  type        = number
+  default     = 365
 }
 
 # CORS
@@ -176,6 +200,18 @@ variable "cloudfront_enabled" {
   description = "Enable CloudFront distribution"
   type        = bool
   default     = true
+}
+
+variable "cloudfront_web_acl_arn" {
+  description = "Optional existing WAFv2 WebACL ARN for CloudFront. A baseline WebACL is created when empty."
+  type        = string
+  default     = ""
+}
+
+variable "waf_log_retention_days" {
+  description = "CloudWatch retention days for CloudFront WAF logs"
+  type        = number
+  default     = 365
 }
 
 variable "is_ipv6_enabled" {

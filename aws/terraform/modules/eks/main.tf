@@ -49,6 +49,49 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
   role       = aws_iam_role.eks_cluster_role.name
 }
 
+resource "aws_kms_key" "eks_secrets" {
+  description             = "KMS key for ${var.cluster_name} Kubernetes secret encryption"
+  deletion_window_in_days = var.kms_deletion_window_in_days
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      {
+        Sid    = "EnableAccountRootPermissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowEKSUse"
+        Effect = "Allow"
+        Principal = {
+          Service = var.eks_service_principal
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:GenerateDataKey",
+          "kms:ReEncrypt*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_kms_alias" "eks_secrets" {
+  name          = "alias/${var.cluster_name}-eks-secrets"
+  target_key_id = aws_kms_key.eks_secrets.key_id
+}
+
 # EKS Cluster
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
@@ -65,7 +108,42 @@ resource "aws_eks_cluster" "main" {
 
   enabled_cluster_log_types = var.cluster_log_types
 
+  encryption_config {
+    provider {
+      key_arn = aws_kms_key.eks_secrets.arn
+    }
+
+    resources = ["secrets"]
+  }
+
   depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
+
+  tags = var.tags
+}
+
+data "aws_eks_addon_version" "vpc_cni" {
+  count = var.manage_vpc_cni_addon ? 1 : 0
+
+  addon_name         = "vpc-cni"
+  kubernetes_version = aws_eks_cluster.main.version
+  most_recent        = true
+}
+
+resource "aws_eks_addon" "vpc_cni" {
+  count = var.manage_vpc_cni_addon ? 1 : 0
+
+  cluster_name                = aws_eks_cluster.main.name
+  addon_name                  = "vpc-cni"
+  addon_version               = data.aws_eks_addon_version.vpc_cni[0].version
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  configuration_values = jsonencode({
+    enableNetworkPolicy = tostring(var.vpc_cni_enable_network_policy)
+    nodeAgent = {
+      enablePolicyEventLogs = tostring(var.vpc_cni_enable_policy_event_logs)
+    }
+  })
 
   tags = var.tags
 }
@@ -140,7 +218,9 @@ resource "aws_eks_node_group" "system_on_demand" {
   }
 
   tags = merge(var.tags, {
-    "karpenter.sh/do-not-evict" = tostring(var.karpenter_evict_enabled)
+    "karpenter.sh/do-not-evict"                     = tostring(var.karpenter_evict_enabled)
+    "k8s.io/cluster-autoscaler/enabled"             = "true"
+    "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
   })
 
   depends_on = [
@@ -176,7 +256,9 @@ resource "aws_eks_node_group" "app_spot" {
   )
 
   tags = merge(var.tags, {
-    "karpenter.sh/do-not-evict" = tostring(var.karpenter_evict_enabled)
+    "karpenter.sh/do-not-evict"                     = tostring(var.karpenter_evict_enabled)
+    "k8s.io/cluster-autoscaler/enabled"             = "true"
+    "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
   })
 
   depends_on = [

@@ -18,11 +18,6 @@ output "private_subnets" {
   value       = [for s in aws_subnet.private : s.id]
 }
 
-output "alb_security_group_id" {
-  description = "ALB security group ID"
-  value       = aws_security_group.alb.id
-}
-
 output "eks_cluster_security_group_id" {
   description = "EKS cluster security group ID"
   value       = aws_security_group.eks_cluster.id

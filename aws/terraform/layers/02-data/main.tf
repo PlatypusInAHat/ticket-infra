@@ -3,26 +3,14 @@
 # - MongoDB Atlas for document database
 # - Amazon MQ for RabbitMQ message queue
 
-terraform {
-  required_version = ">= 1.5"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-    mongodbatlas = {
-      source  = "mongodb/mongodbatlas"
-      version = "~> 1.14"
-    }
-  }
-}
-
 # Data source for networking layer outputs
 data "terraform_remote_state" "networking" {
-  backend = "local"
+  backend = "s3"
 
   config = {
-    path = "${path.module}/../00-networking/terraform.tfstate"
+    bucket = var.terraform_state_bucket
+    key    = "${var.environment}/00-networking/terraform.tfstate"
+    region = var.terraform_state_region
   }
 }
 

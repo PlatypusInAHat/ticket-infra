@@ -11,7 +11,7 @@ variable "aws_region" {
 variable "log_retention_days" {
   description = "CloudWatch log retention days"
   type        = number
-  default     = 7
+  default     = 365
 }
 
 variable "alert_email" {
@@ -30,13 +30,25 @@ variable "tags" {
 variable "sns_kms_key_id" {
   description = "KMS key ID for SNS encryption"
   type        = string
-  default     = "alias/aws/sns"
+  default     = null
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "Deletion window for monitoring KMS keys"
+  type        = number
+  default     = 7
 }
 
 variable "sns_protocol" {
   description = "SNS subscription protocol"
   type        = string
   default     = "email"
+}
+
+variable "iam_policy_version" {
+  description = "IAM policy document version"
+  type        = string
+  default     = "2012-10-17"
 }
 
 # Log Groups
@@ -163,10 +175,7 @@ variable "log_metric_filters" {
 # Dashboard Widgets
 variable "dashboard_widgets" {
   description = "List of CloudWatch dashboard widgets"
-  type = list(object({
-    type       = string
-    properties = any
-  }))
+  type        = any
   default = [
     {
       type = "metric"

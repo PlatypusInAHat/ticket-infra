@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: ticketstage
+  namespace: argocd
+spec:
+  description: TicketStage application delivery project
+  sourceRepos:
+    - https://github.com/PlatypusInAHat/ticket-infra
+  destinations:
+    - namespace: ticketstage
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

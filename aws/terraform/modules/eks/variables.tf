@@ -29,6 +29,12 @@ variable "cluster_security_group_id" {
   type        = string
 }
 
+variable "node_security_group_id" {
+  description = "Security group ID for EKS worker nodes"
+  type        = string
+  default     = ""
+}
+
 variable "endpoint_private_access" {
   description = "Enable private API server endpoint"
   type        = bool
@@ -38,19 +44,25 @@ variable "endpoint_private_access" {
 variable "endpoint_public_access" {
   description = "Enable public API server endpoint"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "cluster_endpoint_public_access_cidrs" {
   description = "List of CIDR blocks that can access the cluster endpoint"
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default     = []
 }
 
 variable "cluster_log_types" {
   description = "List of log types to enable for cluster logging"
   type        = list(string)
   default     = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "Deletion window for the EKS secret encryption KMS key"
+  type        = number
+  default     = 7
 }
 
 variable "oidc_client_id" {
@@ -69,6 +81,24 @@ variable "node_policy_arns" {
     container_reg = "AmazonEC2ContainerRegistryReadOnly"
     ssm           = "AmazonSSMManagedInstanceCore"
   }
+}
+
+variable "manage_vpc_cni_addon" {
+  description = "Manage the Amazon VPC CNI EKS add-on from Terraform."
+  type        = bool
+  default     = true
+}
+
+variable "vpc_cni_enable_network_policy" {
+  description = "Enable Kubernetes NetworkPolicy enforcement in the Amazon VPC CNI add-on."
+  type        = bool
+  default     = true
+}
+
+variable "vpc_cni_enable_policy_event_logs" {
+  description = "Enable policy event logs for the VPC CNI network policy agent."
+  type        = bool
+  default     = true
 }
 
 # System Node Group

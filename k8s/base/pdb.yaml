@@ -12,6 +12,28 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
+  name: auth-service
+  namespace: ticketstage
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: auth-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: catalog-service
+  namespace: ticketstage
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: catalog-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
   name: booking-service
   namespace: ticketstage
 spec:
@@ -19,3 +41,25 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: booking-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: checkin-service
+  namespace: ticketstage
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: checkin-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-service
+  namespace: ticketstage
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: notification-service

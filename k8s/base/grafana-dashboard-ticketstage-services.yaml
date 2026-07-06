@@ -1,0 +1,205 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ticketstage-grafana-dashboard-services
+  namespace: ticketstage
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/name: ticketstage-services-dashboard
+    app.kubernetes.io/part-of: ticketstage
+data:
+  ticketstage-services.json: |-
+    {
+      "uid": "ticketstage-services",
+      "title": "TicketStage Service Health",
+      "tags": ["ticketstage", "microservices"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "templating": {
+        "list": [
+          {
+            "name": "service",
+            "type": "query",
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "query": "label_values(ticketstage_http_requests_total, service)",
+            "refresh": 1,
+            "includeAll": false,
+            "multi": false
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Throughput",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum by (route) (rate(ticketstage_http_requests_total{service=\"$service\"}[5m]))",
+              "legendFormat": "{{ route }}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "reqps" },
+            "overrides": []
+          }
+        },
+        {
+          "id": 2,
+          "title": "Error Rate",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum(rate(ticketstage_http_request_errors_total{service=\"$service\"}[5m])) / clamp_min(sum(rate(ticketstage_http_requests_total{service=\"$service\"}[5m])), 1)",
+              "legendFormat": "5xx ratio"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "percentunit", "min": 0, "max": 1 },
+            "overrides": []
+          }
+        },
+        {
+          "id": 3,
+          "title": "Latency p95",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.95, sum by (le, route) (rate(ticketstage_http_request_duration_seconds_bucket{service=\"$service\"}[5m])))",
+              "legendFormat": "{{ route }}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "s" },
+            "overrides": []
+          }
+        },
+        {
+          "id": 4,
+          "title": "Queue Depth",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "ticketstage_queue_depth{service=\"$service\"}",
+              "legendFormat": "{{ queue }} {{ state }}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "short" },
+            "overrides": []
+          }
+        },
+        {
+          "id": 5,
+          "title": "Outbox Pending Age",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "ticketstage_outbox_oldest_pending_age_seconds{service=\"$service\"}",
+              "legendFormat": "oldest pending"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "s" },
+            "overrides": []
+          }
+        },
+        {
+          "id": 6,
+          "title": "Database Latency p95",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(ticketstage_dependency_latency_seconds_bucket{service=\"$service\",type=\"database\"}[5m])))",
+              "legendFormat": "mongodb"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "s" },
+            "overrides": []
+          }
+        },
+        {
+          "id": 7,
+          "title": "HPA Replica Count",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"ticketstage\",horizontalpodautoscaler=\"$service\"}",
+              "legendFormat": "current"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"ticketstage\",horizontalpodautoscaler=\"$service\"}",
+              "legendFormat": "max"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "short" },
+            "overrides": []
+          }
+        },
+        {
+          "id": 8,
+          "title": "Pod Restarts",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum by (pod) (increase(kube_pod_container_status_restarts_total{namespace=\"ticketstage\",container=\"$service\"}[15m]))",
+              "legendFormat": "{{ pod }}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "short" },
+            "overrides": []
+          }
+        },
+        {
+          "id": 9,
+          "title": "Dependency Availability",
+          "type": "stat",
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "min by (dependency) (ticketstage_dependency_up{service=\"$service\"})",
+              "legendFormat": "{{ dependency }}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [
+                { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              }
+            },
+            "overrides": []
+          }
+        }
+      ]
+    }
