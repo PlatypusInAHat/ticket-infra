@@ -618,6 +618,11 @@ spec:
                 configMapKeyRef:
                   name: ticketstage-config
                   key: BOOKING_QUEUE_LEASE_MS
+            - name: BOOKING_QUEUE_STORE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOOKING_QUEUE_STORE
             - name: RATE_LIMIT_ENABLED
               valueFrom:
                 configMapKeyRef:
@@ -648,6 +653,36 @@ spec:
                 configMapKeyRef:
                   name: ticketstage-config
                   key: PAYMENT_RATE_LIMIT_MAX
+            - name: PURCHASE_LIMIT_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: PURCHASE_LIMIT_ENABLED
+            - name: PURCHASE_LIMIT_WINDOW_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: PURCHASE_LIMIT_WINDOW_MS
+            - name: PURCHASE_LIMIT_MAX_TICKETS_PER_EVENT
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: PURCHASE_LIMIT_MAX_TICKETS_PER_EVENT
+            - name: TURNSTILE_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: TURNSTILE_ENABLED
+            - name: TURNSTILE_PROTECTED_SOURCES
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: TURNSTILE_PROTECTED_SOURCES
+            - name: BOT_RISK_BLOCK_THRESHOLD
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: BOT_RISK_BLOCK_THRESHOLD
             - name: EVENT_REMINDER_WORKER_ENABLED
               valueFrom:
                 configMapKeyRef:

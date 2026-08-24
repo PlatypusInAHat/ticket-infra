@@ -13,6 +13,8 @@ kubectl create secret generic ticketstage-secrets \
   --from-literal=JWT_SECRET="replace-with-real-value" \
   --from-literal=INTERNAL_API_KEY="replace-with-real-value" \
   --from-literal=SECRET_HASH_KEY="replace-with-real-value" \
+  --from-literal=DEVICE_FINGERPRINT_SECRET="replace-with-real-value" \
+  --from-literal=TURNSTILE_SECRET_KEY="replace-with-real-value" \
   --from-literal=PASSWORD_PEPPER="replace-with-real-value" \
   --from-literal=AUTH_MONGODB_URI="replace-with-real-value" \
   --from-literal=CATALOG_MONGODB_URI="replace-with-real-value" \

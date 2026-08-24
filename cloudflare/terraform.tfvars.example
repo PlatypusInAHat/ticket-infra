@@ -3,6 +3,8 @@ cloudflare_zone_id   = "replace_me"
 
 environment    = "ticketstage"
 security_level = "medium"
+bot_score_challenge_enabled = false
+bot_score_threshold         = 30
 
 dns_records = {
   api = {
@@ -16,5 +18,21 @@ dns_records = {
     value   = "dxxxxxxxxxxxxx.cloudfront.net"
     type    = "CNAME"
     proxied = true
+  }
+}
+
+# Enable during major on-sale windows when your Cloudflare plan supports Waiting Room.
+waiting_rooms = {
+  checkout = {
+    name                 = "ticketstage-checkout-hot-sale"
+    host                 = "www.ticketstage.example.com"
+    path                 = "/checkout"
+    total_active_users   = 1000
+    new_users_per_minute = 200
+    session_duration     = 5
+    description          = "Protect checkout during high-demand ticket launches"
+    suspended            = true
+    json_response_enabled = true
+    queueing_status_code = 200
   }
 }

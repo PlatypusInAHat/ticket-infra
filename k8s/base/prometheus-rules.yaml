@@ -45,22 +45,6 @@ spec:
           annotations:
             summary: "Payment webhook failures detected"
             description: "MoMo/VNPay webhook endpoints are returning 5xx responses."
-        - alert: TicketStageBookingQueueBacklogHigh
-          expr: ticketstage_queue_depth{service="booking-service",queue="booking-create",state="pending"} > 100
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: "Booking queue backlog is high"
-            description: "The booking creation queue has more than 100 pending requests for 5 minutes."
-        - alert: TicketStageBookingQueueRejectedRequests
-          expr: increase(ticketstage_queue_depth{service="booking-service",queue="booking-create",state="rejected"}[5m]) > 0
-          for: 2m
-          labels:
-            severity: critical
-          annotations:
-            summary: "Booking queue is rejecting requests"
-            description: "The booking queue rejected requests in the last 5 minutes."
         - alert: TicketStageOutboxPendingTooLong
           expr: ticketstage_outbox_oldest_pending_age_seconds > 300
           for: 5m

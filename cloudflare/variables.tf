@@ -133,3 +133,32 @@ variable "rate_limit_rules" {
     }
   ]
 }
+
+variable "bot_score_challenge_enabled" {
+  type        = bool
+  default     = false
+  description = "Enable Cloudflare Bot Management score challenge for checkout traffic. Requires a plan exposing cf.bot_management.score."
+}
+
+variable "bot_score_threshold" {
+  type        = number
+  default     = 30
+  description = "Challenge checkout requests with a Cloudflare bot score below this value."
+}
+
+variable "waiting_rooms" {
+  type = map(object({
+    name                  = string
+    host                  = string
+    path                  = optional(string, "/")
+    total_active_users    = number
+    new_users_per_minute  = number
+    session_duration      = optional(number, 5)
+    description           = optional(string, "")
+    suspended             = optional(bool, true)
+    json_response_enabled = optional(bool, true)
+    queueing_status_code  = optional(number, 200)
+  }))
+  description = "Optional Cloudflare Waiting Rooms for hot-sale checkout paths. Requires Cloudflare Waiting Room entitlement."
+  default     = {}
+}

@@ -55,6 +55,10 @@ Cấu hình Cloudflare được lưu tại `infra/cloudflare`:
 
 ---
 
+Additional hot-sale controls:
+- **Bot Score Challenge**: Set `bot_score_challenge_enabled=true` to challenge checkout traffic with low `cf.bot_management.score`. Enable only on zones with Cloudflare Bot Management.
+- **Waiting Room**: Configure `waiting_rooms` for major ticket launches. Keep rooms `suspended=true` until the on-sale window, then enable after confirming Cloudflare entitlement and capacity.
+
 ## 5. Deployment Quickstart & Checklist
 
 ### Yêu cầu cài đặt

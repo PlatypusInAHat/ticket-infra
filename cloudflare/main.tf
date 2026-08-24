@@ -79,3 +79,34 @@ resource "cloudflare_ruleset" "rate_limits" {
     }
   }
 }
+
+resource "cloudflare_ruleset" "bot_score_checkout" {
+  count   = var.bot_score_challenge_enabled ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  name    = "${var.environment}-bot-score-checkout"
+  kind    = "zone"
+  phase   = "http_request_firewall_custom"
+
+  rules {
+    action      = "managed_challenge"
+    description = "Challenge low bot score checkout and booking traffic"
+    enabled     = true
+    expression  = "(http.request.uri.path in {\"/checkout\" \"/api/bookings\" \"/api/payment/session\"} and cf.bot_management.score lt ${var.bot_score_threshold})"
+  }
+}
+
+resource "cloudflare_waiting_room" "rooms" {
+  for_each = var.waiting_rooms
+
+  zone_id               = var.cloudflare_zone_id
+  name                  = each.value.name
+  host                  = each.value.host
+  path                  = each.value.path
+  total_active_users    = each.value.total_active_users
+  new_users_per_minute  = each.value.new_users_per_minute
+  session_duration      = each.value.session_duration
+  description           = each.value.description
+  suspended             = each.value.suspended
+  json_response_enabled = each.value.json_response_enabled
+  queueing_status_code  = each.value.queueing_status_code
+}
