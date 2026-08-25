@@ -5,3 +5,12 @@ crash.log
 schema.json
 *.tfvars
 !*.tfvars.example
+
+# Local AI agent instructions and generated skills
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+**/AGENTS.md
+**/CLAUDE.md
+**/GEMINI.md
+.claude/skills/generated/
