@@ -5,6 +5,7 @@ on:
     branches:
       - dev
       - main
+      - 'release/**'
     paths:
       - 'aws/**'
       - 'cloudflare/**'
@@ -18,6 +19,7 @@ on:
     branches:
       - dev
       - main
+      - 'release/**'
     paths:
       - 'aws/**'
       - 'cloudflare/**'
@@ -61,6 +63,10 @@ on:
           - apply
           - destroy
 
+concurrency:
+  group: infra-${{ github.event.inputs.environment || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   validate:
     name: Validate
@@ -102,9 +108,13 @@ jobs:
         run: |
           kubectl kustomize k8s/base >/dev/null
           kubectl kustomize k8s/overlays/dev >/dev/null
+          kubectl kustomize k8s/overlays/staging >/dev/null
           kubectl kustomize k8s/overlays/prod >/dev/null
           kubectl kustomize argocd/bootstrap >/dev/null
           kubectl kustomize argocd/applications >/dev/null
+          kubectl kustomize argocd/applications/dev >/dev/null
+          kubectl kustomize argocd/applications/staging >/dev/null
+          kubectl kustomize argocd/applications/prod >/dev/null
 
   audit:
     name: Audit Code And IaC
@@ -204,7 +214,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
     needs: validate
-    env: &terraform_env
+    env:
       TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
       TF_INPUT: "false"
       TF_IN_AUTOMATION: "true"
@@ -296,7 +306,19 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ always() && !failure() && !cancelled() && github.event_name == 'workflow_dispatch' && github.event.inputs.action != 'destroy' && (github.event.inputs.layer == 'all' || github.event.inputs.layer == '00-networking') }}
     needs: preflight
-    env: *terraform_env
+    env:
+      TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_terraform_state_bucket: ${{ secrets.TF_STATE_BUCKET }}
+      TF_VAR_terraform_state_region: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -336,7 +358,19 @@ jobs:
     needs:
       - preflight
       - terraform_00_networking
-    env: *terraform_env
+    env:
+      TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_terraform_state_bucket: ${{ secrets.TF_STATE_BUCKET }}
+      TF_VAR_terraform_state_region: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -376,7 +410,26 @@ jobs:
     needs:
       - preflight
       - terraform_01_kubernetes
-    env: *terraform_env
+    env:
+      TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_terraform_state_bucket: ${{ secrets.TF_STATE_BUCKET }}
+      TF_VAR_terraform_state_region: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
+      TF_VAR_mongodb_public_key: ${{ secrets.MONGODB_PUBLIC_KEY }}
+      TF_VAR_mongodb_private_key: ${{ secrets.MONGODB_PRIVATE_KEY }}
+      TF_VAR_mongodb_org_id: ${{ secrets.MONGODB_ORG_ID }}
+      TF_VAR_mongodb_username: ${{ secrets.MONGODB_USERNAME }}
+      TF_VAR_mongodb_password: ${{ secrets.MONGODB_PASSWORD }}
+      TF_VAR_mq_admin_username: ${{ secrets.MQ_ADMIN_USERNAME }}
+      TF_VAR_mq_admin_password: ${{ secrets.MQ_ADMIN_PASSWORD }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -416,7 +469,26 @@ jobs:
     needs:
       - preflight
       - terraform_02_data
-    env: *terraform_env
+    env:
+      TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_terraform_state_bucket: ${{ secrets.TF_STATE_BUCKET }}
+      TF_VAR_terraform_state_region: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
+      TF_VAR_mongodb_username: ${{ secrets.MONGODB_USERNAME }}
+      TF_VAR_mongodb_connection_string: ${{ secrets.MONGODB_CONNECTION_STRING }}
+      TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+      TF_VAR_rabbitmq_username: ${{ secrets.RABBITMQ_USERNAME }}
+      TF_VAR_rabbitmq_password: ${{ secrets.RABBITMQ_PASSWORD }}
+      TF_VAR_rabbitmq_url: ${{ secrets.RABBITMQ_URL }}
+      TF_VAR_eks_service_account_role_arn: ${{ secrets.EKS_SERVICE_ACCOUNT_ROLE_ARN }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -456,7 +528,19 @@ jobs:
     needs:
       - preflight
       - terraform_03_storage
-    env: *terraform_env
+    env:
+      TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_terraform_state_bucket: ${{ secrets.TF_STATE_BUCKET }}
+      TF_VAR_terraform_state_region: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -496,7 +580,16 @@ jobs:
     needs:
       - preflight
       - terraform_04_observability
-    env: *terraform_env
+    env:
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
+      CLOUDFLARE_DNS_RECORDS: ${{ secrets.CLOUDFLARE_DNS_RECORDS }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -538,7 +631,16 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ always() && !failure() && !cancelled() && github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy' && (github.event.inputs.layer == 'all' || github.event.inputs.layer == 'cloudflare') }}
     needs: preflight
-    env: *terraform_env
+    env:
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
+      CLOUDFLARE_DNS_RECORDS: ${{ secrets.CLOUDFLARE_DNS_RECORDS }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -578,7 +680,19 @@ jobs:
     needs:
       - preflight
       - destroy_cloudflare
-    env: *terraform_env
+    env:
+      TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_terraform_state_bucket: ${{ secrets.TF_STATE_BUCKET }}
+      TF_VAR_terraform_state_region: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -614,7 +728,26 @@ jobs:
     needs:
       - preflight
       - destroy_04_observability
-    env: *terraform_env
+    env:
+      TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_terraform_state_bucket: ${{ secrets.TF_STATE_BUCKET }}
+      TF_VAR_terraform_state_region: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
+      TF_VAR_mongodb_username: ${{ secrets.MONGODB_USERNAME }}
+      TF_VAR_mongodb_connection_string: ${{ secrets.MONGODB_CONNECTION_STRING }}
+      TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+      TF_VAR_rabbitmq_username: ${{ secrets.RABBITMQ_USERNAME }}
+      TF_VAR_rabbitmq_password: ${{ secrets.RABBITMQ_PASSWORD }}
+      TF_VAR_rabbitmq_url: ${{ secrets.RABBITMQ_URL }}
+      TF_VAR_eks_service_account_role_arn: ${{ secrets.EKS_SERVICE_ACCOUNT_ROLE_ARN }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -650,7 +783,26 @@ jobs:
     needs:
       - preflight
       - destroy_03_storage
-    env: *terraform_env
+    env:
+      TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_terraform_state_bucket: ${{ secrets.TF_STATE_BUCKET }}
+      TF_VAR_terraform_state_region: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
+      TF_VAR_mongodb_public_key: ${{ secrets.MONGODB_PUBLIC_KEY }}
+      TF_VAR_mongodb_private_key: ${{ secrets.MONGODB_PRIVATE_KEY }}
+      TF_VAR_mongodb_org_id: ${{ secrets.MONGODB_ORG_ID }}
+      TF_VAR_mongodb_username: ${{ secrets.MONGODB_USERNAME }}
+      TF_VAR_mongodb_password: ${{ secrets.MONGODB_PASSWORD }}
+      TF_VAR_mq_admin_username: ${{ secrets.MQ_ADMIN_USERNAME }}
+      TF_VAR_mq_admin_password: ${{ secrets.MQ_ADMIN_PASSWORD }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -686,7 +838,19 @@ jobs:
     needs:
       - preflight
       - destroy_02_data
-    env: *terraform_env
+    env:
+      TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_terraform_state_bucket: ${{ secrets.TF_STATE_BUCKET }}
+      TF_VAR_terraform_state_region: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -722,7 +886,19 @@ jobs:
     needs:
       - preflight
       - destroy_01_kubernetes
-    env: *terraform_env
+    env:
+      TF_VAR_FILE: "../../environments/${{ github.event.inputs.environment }}/terraform.tfvars"
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
+      TF_VAR_terraform_state_bucket: ${{ secrets.TF_STATE_BUCKET }}
+      TF_VAR_terraform_state_region: ${{ secrets.TF_STATE_REGION || secrets.AWS_REGION }}
+      TF_VAR_environment: ${{ github.event.inputs.environment }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
