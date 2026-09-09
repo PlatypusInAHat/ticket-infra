@@ -448,33 +448,6 @@ resource "aws_cloudfront_distribution" "frontend" {
     max_ttl     = 0
   }
 
-  # Cache behavior for API calls (passthrough to ALB)
-  dynamic "ordered_cache_behavior" {
-    for_each = var.enable_api_cache_behavior ? [1] : []
-    content {
-      path_pattern               = var.api_path_pattern
-      allowed_methods            = var.api_allowed_methods
-      cached_methods             = var.default_cached_methods
-      target_origin_id           = var.s3_origin_id
-      response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
-      viewer_protocol_policy     = var.api_viewer_protocol_policy
-
-      forwarded_values {
-        query_string = true
-
-        cookies {
-          forward = "all"
-        }
-
-        headers = ["*"]
-      }
-
-      min_ttl     = 0
-      default_ttl = 0
-      max_ttl     = 0
-    }
-  }
-
   # Custom error responses - Dynamic
   dynamic "custom_error_response" {
     for_each = var.custom_error_responses

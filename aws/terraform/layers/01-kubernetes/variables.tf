@@ -33,11 +33,17 @@ variable "terraform_state_region" {
 variable "kubernetes_version" {
   description = "Kubernetes version"
   type        = string
-  default     = "1.29"
+  default     = "1.35"
 }
 
 variable "manage_vpc_cni_addon" {
   description = "Manage the Amazon VPC CNI EKS add-on from Terraform."
+  type        = bool
+  default     = true
+}
+
+variable "manage_ebs_csi_addon" {
+  description = "Manage the Amazon EBS CSI EKS add-on."
   type        = bool
   default     = true
 }
@@ -58,19 +64,19 @@ variable "vpc_cni_enable_policy_event_logs" {
 variable "system_node_group_desired_size" {
   description = "Desired size for system node group"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "system_node_group_min_size" {
   description = "Min size for system node group"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "system_node_group_max_size" {
   description = "Max size for system node group"
   type        = number
-  default     = 3
+  default     = 4
 }
 
 variable "system_node_group_instance_types" {
@@ -102,6 +108,31 @@ variable "app_spot_node_group_instance_types" {
   description = "Instance types for app spot nodes"
   type        = list(string)
   default     = ["t4g.medium", "t4g.large", "m7g.medium", "m7g.large"]
+}
+
+# Critical App On-Demand Node Group
+variable "app_on_demand_node_group_desired_size" {
+  description = "Desired size for critical app On-Demand node group"
+  type        = number
+  default     = 2
+}
+
+variable "app_on_demand_node_group_min_size" {
+  description = "Min size for critical app On-Demand node group"
+  type        = number
+  default     = 2
+}
+
+variable "app_on_demand_node_group_max_size" {
+  description = "Max size for critical app On-Demand node group"
+  type        = number
+  default     = 6
+}
+
+variable "app_on_demand_node_group_instance_types" {
+  description = "Instance types for critical app On-Demand nodes"
+  type        = list(string)
+  default     = ["m7g.medium", "m7g.large", "t4g.large"]
 }
 
 variable "tags" {

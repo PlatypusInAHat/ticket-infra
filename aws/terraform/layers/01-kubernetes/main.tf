@@ -28,6 +28,7 @@ module "eks" {
   cluster_security_group_id = data.terraform_remote_state.networking.outputs.eks_cluster_security_group_id
   node_security_group_id    = data.terraform_remote_state.networking.outputs.eks_nodes_security_group_id
   manage_vpc_cni_addon      = var.manage_vpc_cni_addon
+  manage_ebs_csi_addon      = var.manage_ebs_csi_addon
 
   vpc_cni_enable_network_policy    = var.vpc_cni_enable_network_policy
   vpc_cni_enable_policy_event_logs = var.vpc_cni_enable_policy_event_logs
@@ -42,6 +43,11 @@ module "eks" {
   app_spot_node_group_min_size       = var.app_spot_node_group_min_size
   app_spot_node_group_max_size       = var.app_spot_node_group_max_size
   app_spot_node_group_instance_types = var.app_spot_node_group_instance_types
+
+  app_on_demand_node_group_desired_size   = var.app_on_demand_node_group_desired_size
+  app_on_demand_node_group_min_size       = var.app_on_demand_node_group_min_size
+  app_on_demand_node_group_max_size       = var.app_on_demand_node_group_max_size
+  app_on_demand_node_group_instance_types = var.app_on_demand_node_group_instance_types
 
   tags = local.common_tags
 }
@@ -71,6 +77,76 @@ provider "helm" {
   }
 }
 
+resource "helm_release" "aws_load_balancer_controller" {
+  name       = "aws-load-balancer-controller"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+  namespace  = "kube-system"
+  version    = "1.14.0"
+
+  set {
+    name  = "clusterName"
+    value = module.eks.cluster_id
+  }
+
+  set {
+    name  = "region"
+    value = var.aws_region
+  }
+
+  set {
+    name  = "vpcId"
+    value = data.terraform_remote_state.networking.outputs.vpc_id
+  }
+
+  set {
+    name  = "replicaCount"
+    value = "2"
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = "aws-load-balancer-controller"
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.eks.load_balancer_controller_iam_role_arn
+  }
+
+  set {
+    name  = "nodeSelector.workload"
+    value = "system-pods"
+  }
+
+  set {
+    name  = "tolerations[0].key"
+    value = "system"
+  }
+
+  set {
+    name  = "tolerations[0].operator"
+    value = "Equal"
+  }
+
+  set {
+    name  = "tolerations[0].value"
+    value = "true"
+  }
+
+  set {
+    name  = "tolerations[0].effect"
+    value = "NoSchedule"
+  }
+
+  depends_on = [module.eks]
+}
+
 resource "helm_release" "metrics_server" {
   name       = "metrics-server"
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
@@ -91,6 +167,31 @@ resource "helm_release" "metrics_server" {
   set {
     name  = "args[1]"
     value = "--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname"
+  }
+
+  set {
+    name  = "nodeSelector.workload"
+    value = "system-pods"
+  }
+
+  set {
+    name  = "tolerations[0].key"
+    value = "system"
+  }
+
+  set {
+    name  = "tolerations[0].operator"
+    value = "Equal"
+  }
+
+  set {
+    name  = "tolerations[0].value"
+    value = "true"
+  }
+
+  set {
+    name  = "tolerations[0].effect"
+    value = "NoSchedule"
   }
 
   depends_on = [module.eks]
@@ -131,6 +232,31 @@ resource "helm_release" "cluster_autoscaler" {
   set {
     name  = "extraArgs.balance-similar-node-groups"
     value = "true"
+  }
+
+  set {
+    name  = "nodeSelector.workload"
+    value = "system-pods"
+  }
+
+  set {
+    name  = "tolerations[0].key"
+    value = "system"
+  }
+
+  set {
+    name  = "tolerations[0].operator"
+    value = "Equal"
+  }
+
+  set {
+    name  = "tolerations[0].value"
+    value = "true"
+  }
+
+  set {
+    name  = "tolerations[0].effect"
+    value = "NoSchedule"
   }
 
   depends_on = [module.eks]

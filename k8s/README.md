@@ -20,7 +20,8 @@ kubectl create secret generic ticketstage-secrets \
   --from-literal=CATALOG_MONGODB_URI="replace-with-real-value" \
   --from-literal=BOOKING_MONGODB_URI="replace-with-real-value" \
   --from-literal=CHECKIN_MONGODB_URI="replace-with-real-value" \
-  --from-literal=EVENT_BROKER_URL="replace-with-real-value"
+  --from-literal=EVENT_BROKER_URL="replace-with-real-value" \
+  --from-literal=REDIS_URL="redis://replace-with-elasticache-endpoint:6379"
 ```
 
 Prefer External Secrets or Sealed Secrets for real deployments.
@@ -38,12 +39,26 @@ kubectl get hpa -n ticketstage
 
 If `kubectl top` returns data, HPA can read metrics and scale services.
 
+## High-volume inventory
+
+General-admission tickets can use bucket inventory to distribute concurrent
+atomic writes. The application image contains the migration scripts, but the
+CI migration is opt-in through the GitHub repository variable
+`ENABLE_INVENTORY_BUCKET_MIGRATION=true`. Benchmark a dedicated event first;
+the migration changes all active general-admission tickets in the catalog
+database.
+
+For multi-pod rate limiting, provision Redis/ElastiCache and store its URL in
+`ticketstage-secrets`. Only then change `RATE_LIMIT_STORE` from `mongo` to
+`redis`; do not use the placeholder endpoint in the example secret.
+
 ## Images
 
 Use overlays to replace the base placeholder image:
 
 ```bash
 kubectl apply -k k8s/overlays/dev
+kubectl apply -k k8s/overlays/staging
 kubectl apply -k k8s/overlays/prod
 ```
 

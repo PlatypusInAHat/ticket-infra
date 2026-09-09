@@ -50,7 +50,6 @@ queue_depth_threshold = 50
 
 # CloudFront
 cloudfront_cache_default_ttl = 3600
-enable_api_cache_behavior    = false
 invalidate_on_apply          = false
 
 # ECR

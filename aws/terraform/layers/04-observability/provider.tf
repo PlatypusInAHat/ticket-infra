@@ -27,9 +27,13 @@ provider "aws" {
   region = var.aws_region
 
   default_tags {
-    tags = {
+    tags = merge(var.tags, {
       Environment = var.environment
       Project     = var.project_name
-    }
+      ManagedBy   = "Terraform"
+      Layer       = "04-observability"
+      Owner       = lookup(var.tags, "Owner", "platform")
+      CostCenter  = lookup(var.tags, "CostCenter", "ticketstage")
+    })
   }
 }

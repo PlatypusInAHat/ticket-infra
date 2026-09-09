@@ -28,15 +28,14 @@ module "ecr" {
 module "s3_cloudfront" {
   source = "../../modules/s3-cloudfront"
 
-  environment               = var.environment
-  allowed_origins           = var.cloudfront_allowed_origins
-  cache_min_ttl             = var.cloudfront_cache_min_ttl
-  cache_default_ttl         = var.cloudfront_cache_default_ttl
-  cache_max_ttl             = var.cloudfront_cache_max_ttl
-  enable_api_cache_behavior = var.enable_api_cache_behavior
-  custom_domain             = var.custom_domain
-  acm_certificate_arn       = var.acm_certificate_arn
-  invalidate_on_apply       = var.invalidate_on_apply
+  environment         = var.environment
+  allowed_origins     = var.cloudfront_allowed_origins
+  cache_min_ttl       = var.cloudfront_cache_min_ttl
+  cache_default_ttl   = var.cloudfront_cache_default_ttl
+  cache_max_ttl       = var.cloudfront_cache_max_ttl
+  custom_domain       = var.custom_domain
+  acm_certificate_arn = var.acm_certificate_arn
+  invalidate_on_apply = var.invalidate_on_apply
 
   tags = local.common_tags
 }

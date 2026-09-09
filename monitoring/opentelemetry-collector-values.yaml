@@ -2,6 +2,15 @@ mode: deployment
 
 replicaCount: 2
 
+nodeSelector:
+  workload: system-pods
+
+tolerations:
+  - key: system
+    operator: Equal
+    value: "true"
+    effect: NoSchedule
+
 image:
   repository: otel/opentelemetry-collector-contrib
   tag: 0.154.0

@@ -161,6 +161,95 @@ resource "aws_iam_openid_connect_provider" "eks" {
   tags = var.tags
 }
 
+locals {
+  oidc_issuer = replace(
+    aws_iam_openid_connect_provider.eks.url,
+    var.https_prefix_to_replace,
+    var.https_prefix_replacement
+  )
+}
+
+resource "aws_iam_role" "ebs_csi" {
+  name_prefix = "${var.cluster_name}-ebs-csi-"
+
+  assume_role_policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [{
+      Action = var.sts_assume_role_with_web_identity_action
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Condition = {
+        StringEquals = {
+          "${local.oidc_issuer}:aud" = var.oidc_client_id
+          "${local.oidc_issuer}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+        }
+      }
+    }]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi" {
+  role       = aws_iam_role.ebs_csi.name
+  policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicyV2"
+}
+
+resource "aws_eks_addon" "ebs_csi" {
+  count = var.manage_ebs_csi_addon ? 1 : 0
+
+  cluster_name                = aws_eks_cluster.main.name
+  addon_name                  = "aws-ebs-csi-driver"
+  service_account_role_arn    = aws_iam_role.ebs_csi.arn
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "PRESERVE"
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ebs_csi,
+    aws_eks_node_group.system_on_demand
+  ]
+
+  tags = var.tags
+}
+
+resource "aws_iam_policy" "load_balancer_controller" {
+  name_prefix = "${var.cluster_name}-load-balancer-controller-"
+  description = "AWS Load Balancer Controller v2.14.1 policy"
+  policy      = file("${path.module}/aws-load-balancer-controller-iam-policy.json")
+
+  tags = var.tags
+}
+
+resource "aws_iam_role" "load_balancer_controller" {
+  name_prefix = "${var.cluster_name}-load-balancer-controller-"
+
+  assume_role_policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [{
+      Action = var.sts_assume_role_with_web_identity_action
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Condition = {
+        StringEquals = {
+          "${local.oidc_issuer}:aud" = var.oidc_client_id
+          "${local.oidc_issuer}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
+        }
+      }
+    }]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "load_balancer_controller" {
+  role       = aws_iam_role.load_balancer_controller.name
+  policy_arn = aws_iam_policy.load_balancer_controller.arn
+}
+
 # Node Group IAM Role
 resource "aws_iam_role" "eks_node_role" {
   name_prefix = "${var.cluster_name}-node-"
@@ -270,6 +359,44 @@ resource "aws_eks_node_group" "app_spot" {
   }
 }
 
+# Dedicated On-Demand capacity keeps revenue and gate-entry paths available
+# during Spot interruption or capacity shortages.
+resource "aws_eks_node_group" "app_on_demand" {
+  cluster_name    = aws_eks_cluster.main.name
+  node_group_name = "${var.cluster_name}-app-critical-on-demand"
+  node_role_arn   = aws_iam_role.eks_node_role.arn
+  subnet_ids      = var.private_subnets
+  version         = var.kubernetes_version
+
+  scaling_config {
+    desired_size = var.app_on_demand_node_group_desired_size
+    max_size     = var.app_on_demand_node_group_max_size
+    min_size     = var.app_on_demand_node_group_min_size
+  }
+
+  capacity_type  = "ON_DEMAND"
+  instance_types = var.app_on_demand_node_group_instance_types
+
+  labels = {
+    "node-type" = var.app_node_type_label_value
+    "workload"  = "critical"
+    "capacity"  = var.on_demand_capacity_label_value
+  }
+
+  tags = merge(var.tags, {
+    "k8s.io/cluster-autoscaler/enabled"             = "true"
+    "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
+  })
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_node_policies,
+  ]
+
+  lifecycle {
+    ignore_changes = [scaling_config[0].desired_size]
+  }
+}
+
 # Cluster Autoscaler IAM Role
 resource "aws_iam_role" "cluster_autoscaler" {
   name_prefix = "${var.cluster_name}-autoscaler-"
@@ -278,14 +405,15 @@ resource "aws_iam_role" "cluster_autoscaler" {
     Version = var.iam_policy_version
     Statement = [
       {
-        Action = var.sts_assume_role_action
+        Action = var.sts_assume_role_with_web_identity_action
         Effect = "Allow"
         Principal = {
           Federated = aws_iam_openid_connect_provider.eks.arn
         }
         Condition = {
           StringEquals = {
-            "${replace(aws_iam_openid_connect_provider.eks.url, var.https_prefix_to_replace, var.https_prefix_replacement)}:sub" = "system:serviceaccount:${var.cluster_autoscaler_namespace}:${var.cluster_autoscaler_service_account}"
+            "${local.oidc_issuer}:aud" = var.oidc_client_id
+            "${local.oidc_issuer}:sub" = "system:serviceaccount:${var.cluster_autoscaler_namespace}:${var.cluster_autoscaler_service_account}"
           }
         }
       }

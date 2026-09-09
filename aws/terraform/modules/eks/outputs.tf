@@ -48,3 +48,8 @@ output "node_security_group_id" {
   description = "Security group ID for nodes"
   value       = var.node_security_group_id
 }
+
+output "load_balancer_controller_iam_role_arn" {
+  description = "IAM role ARN for the AWS Load Balancer Controller"
+  value       = aws_iam_role.load_balancer_controller.arn
+}

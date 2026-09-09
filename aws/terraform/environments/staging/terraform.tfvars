@@ -48,7 +48,6 @@ mq_max_connections = 5000
 
 # CloudFront
 cloudfront_cache_default_ttl = 3600
-enable_api_cache_behavior    = true
 invalidate_on_apply          = false
 
 # Monitoring

@@ -42,7 +42,6 @@ mq_deployment_mode = "SINGLE_INSTANCE" # Cheaper than ACTIVE_STANDBY
 
 # CloudFront
 cloudfront_cache_default_ttl = 3600
-enable_api_cache_behavior    = false
 
 # Monitoring
 alert_email = "your-email@example.com"

@@ -1,8 +1,18 @@
 tempo:
   retention: 24h
 
+nodeSelector:
+  workload: system-pods
+
+tolerations:
+  - key: system
+    operator: Equal
+    value: "true"
+    effect: NoSchedule
+
 persistence:
   enabled: true
+  storageClassName: ticketstage-gp3
   size: 10Gi
 
 resources:

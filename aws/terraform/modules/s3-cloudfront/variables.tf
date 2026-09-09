@@ -27,12 +27,6 @@ variable "cache_max_ttl" {
   default     = 31536000
 }
 
-variable "enable_api_cache_behavior" {
-  description = "Enable cache behavior for API calls"
-  type        = bool
-  default     = false
-}
-
 variable "custom_domain" {
   description = "Custom domain for CloudFront distribution"
   type        = string
@@ -260,25 +254,6 @@ variable "index_path_pattern" {
   description = "Path pattern for index.html cache behavior"
   type        = string
   default     = "/index.html"
-}
-
-# API Cache Behavior
-variable "api_path_pattern" {
-  description = "Path pattern for API cache behavior"
-  type        = string
-  default     = "/api/*"
-}
-
-variable "api_allowed_methods" {
-  description = "Allowed HTTP methods for API"
-  type        = list(string)
-  default     = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-}
-
-variable "api_viewer_protocol_policy" {
-  description = "Viewer protocol policy for API"
-  type        = string
-  default     = "https-only"
 }
 
 # Custom Error Responses - Dynamic

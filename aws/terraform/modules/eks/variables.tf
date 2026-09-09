@@ -6,7 +6,7 @@ variable "cluster_name" {
 variable "kubernetes_version" {
   description = "Kubernetes version to use"
   type        = string
-  default     = "1.29"
+  default     = "1.35"
 }
 
 variable "region" {
@@ -105,19 +105,19 @@ variable "vpc_cni_enable_policy_event_logs" {
 variable "system_node_group_desired_size" {
   description = "Desired number of nodes in system node group"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "system_node_group_min_size" {
   description = "Minimum number of nodes in system node group"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "system_node_group_max_size" {
   description = "Maximum number of nodes in system node group"
   type        = number
-  default     = 3
+  default     = 4
 }
 
 variable "system_node_group_instance_types" {
@@ -151,6 +151,37 @@ variable "app_spot_node_group_instance_types" {
   default     = ["t4g.medium", "t4g.large", "m7g.medium", "m7g.large"]
 }
 
+# Critical application On-Demand capacity
+variable "app_on_demand_node_group_desired_size" {
+  description = "Desired number of On-Demand nodes for booking and check-in workloads"
+  type        = number
+  default     = 2
+}
+
+variable "app_on_demand_node_group_min_size" {
+  description = "Minimum number of On-Demand nodes for booking and check-in workloads"
+  type        = number
+  default     = 2
+}
+
+variable "app_on_demand_node_group_max_size" {
+  description = "Maximum number of On-Demand nodes for booking and check-in workloads"
+  type        = number
+  default     = 6
+}
+
+variable "app_on_demand_node_group_instance_types" {
+  description = "Instance types for critical On-Demand application nodes"
+  type        = list(string)
+  default     = ["m7g.medium", "m7g.large", "t4g.large"]
+}
+
+variable "on_demand_capacity_label_value" {
+  description = "Label value used to identify On-Demand capacity"
+  type        = string
+  default     = "on-demand"
+}
+
 variable "tags" {
   description = "Common tags for resources"
   type        = map(string)
@@ -168,6 +199,18 @@ variable "sts_assume_role_action" {
   description = "STS AssumeRole action"
   type        = string
   default     = "sts:AssumeRole"
+}
+
+variable "sts_assume_role_with_web_identity_action" {
+  description = "STS action used by IRSA roles"
+  type        = string
+  default     = "sts:AssumeRoleWithWebIdentity"
+}
+
+variable "manage_ebs_csi_addon" {
+  description = "Manage the Amazon EBS CSI EKS add-on"
+  type        = bool
+  default     = true
 }
 
 variable "eks_service_principal" {

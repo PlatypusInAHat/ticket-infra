@@ -137,3 +137,223 @@ spec:
       ports:
         - protocol: TCP
           port: 5105
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-monitoring-scrape
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: ticketstage
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - { protocol: TCP, port: 5000 }
+        - { protocol: TCP, port: 5101 }
+        - { protocol: TCP, port: 5102 }
+        - { protocol: TCP, port: 5103 }
+        - { protocol: TCP, port: 5104 }
+        - { protocol: TCP, port: 5105 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ticketstage-app-egress
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: ticketstage
+  policyTypes:
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-and-telemetry-egress
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: ticketstage
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 4318
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-gateway-service-egress
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - auth-service
+                  - catalog-service
+                  - booking-service
+                  - checkin-service
+                  - notification-service
+      ports:
+        - protocol: TCP
+          port: 5101
+        - protocol: TCP
+          port: 5102
+        - protocol: TCP
+          port: 5103
+        - protocol: TCP
+          port: 5104
+        - protocol: TCP
+          port: 5105
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-auth-service-egress
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: auth-service
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - catalog-service
+                  - booking-service
+                  - checkin-service
+      ports:
+        - { protocol: TCP, port: 5102 }
+        - { protocol: TCP, port: 5103 }
+        - { protocol: TCP, port: 5104 }
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - { protocol: TCP, port: 443 }
+        - { protocol: TCP, port: 27017 }
+        - { protocol: TCP, port: 5671 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-catalog-service-egress
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: catalog-service
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - { protocol: TCP, port: 443 }
+        - { protocol: TCP, port: 27017 }
+        - { protocol: TCP, port: 5671 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-booking-service-egress
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: booking-service
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: catalog-service
+      ports:
+        - { protocol: TCP, port: 5102 }
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - { protocol: TCP, port: 443 }
+        - { protocol: TCP, port: 27017 }
+        - { protocol: TCP, port: 5671 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-checkin-service-egress
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: checkin-service
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - { protocol: TCP, port: 27017 }
+        - { protocol: TCP, port: 5671 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-notification-service-egress
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: notification-service
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - { protocol: TCP, port: 443 }
+        - { protocol: TCP, port: 465 }
+        - { protocol: TCP, port: 587 }
+        - { protocol: TCP, port: 27017 }
+        - { protocol: TCP, port: 5671 }

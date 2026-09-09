@@ -31,24 +31,21 @@ patches:
     patch: |-
       - op: replace
         path: /data/FRONTEND_URL
-        value: https://dev.ticketstage.example.com
+        value: https://staging.ticketstage.example.com
       - op: replace
         path: /data/PUBLIC_API_URL
-        value: https://api-dev.ticketstage.example.com
-      - op: replace
-        path: /data/NODE_ENV
-        value: development
+        value: https://api-staging.ticketstage.example.com
   - target:
       kind: ConfigMap
       name: ticketstage-observability-config
     patch: |-
       - op: replace
         path: /data/OTEL_RESOURCE_ATTRIBUTES
-        value: service.namespace=ticketstage,deployment.environment=dev
+        value: service.namespace=ticketstage,deployment.environment=staging
   - target:
       kind: Ingress
       name: ticketstage-api
     patch: |-
       - op: replace
         path: /spec/rules/0/host
-        value: api-dev.ticketstage.example.com
+        value: api-staging.ticketstage.example.com

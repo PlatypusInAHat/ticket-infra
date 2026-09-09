@@ -43,6 +43,15 @@ resource "mongodbatlas_cluster" "main" {
 
   lifecycle {
     ignore_changes = [disk_size_gb]
+
+    precondition {
+      condition = var.environment != "prod" || (
+        var.backup_enabled &&
+        var.pit_enabled &&
+        try(tonumber(trimprefix(var.instance_size_name, "M")), 0) >= 10
+      )
+      error_message = "Production MongoDB Atlas must use M10 or larger with backup and PITR enabled."
+    }
   }
 
   depends_on = [

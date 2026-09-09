@@ -24,6 +24,8 @@ module "mongodb_atlas" {
   instance_size_name      = var.mongodb_instance_size
   mongodb_region          = var.mongodb_region
   disk_size_gb            = var.mongodb_disk_size_gb
+  backup_enabled          = var.mongodb_backup_enabled
+  pit_enabled             = var.mongodb_pit_enabled
   vpc_cidr                = data.terraform_remote_state.networking.outputs.vpc_cidr
   database_username       = var.mongodb_username
   database_password       = var.mongodb_password

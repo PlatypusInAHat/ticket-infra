@@ -1,19 +1,23 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ticketstage-root
+  name: ticketstage-staging
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/name: ticketstage
+    app.kubernetes.io/part-of: ticketstage
+    environment: staging
 spec:
-  project: default
+  project: ticketstage
   source:
     repoURL: https://github.com/PlatypusInAHat/ticket-infra
     targetRevision: dev
-    path: argocd/applications/dev
+    path: k8s/overlays/staging
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: ticketstage
   syncPolicy:
     automated:
       prune: true
@@ -21,3 +25,5 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
+      - PrunePropagationPolicy=foreground
+  revisionHistoryLimit: 10

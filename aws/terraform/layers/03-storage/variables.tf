@@ -62,12 +62,6 @@ variable "cloudfront_cache_max_ttl" {
   default     = 31536000
 }
 
-variable "enable_api_cache_behavior" {
-  description = "Enable API cache behavior"
-  type        = bool
-  default     = false
-}
-
 variable "custom_domain" {
   description = "Custom domain"
   type        = string

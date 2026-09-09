@@ -81,7 +81,7 @@ Do thiết kế Layered, bạn **bắt buộc** phải deploy theo thứ tự t�
 1. Cập nhật kubeconfig: `aws eks update-kubeconfig --name <cluster-name> --region <region>`
 2. Cài đặt KEDA: `helm install keda kedacore/keda --namespace keda --create-namespace`
 3. Cài đặt Prometheus Stack: `helm install prometheus prometheus-community/kube-prometheus-stack`
-4. Apply ứng dụng: `kubectl apply -k infra/k8s/base`
+4. Bootstrap Argo CD theo mục bên dưới; không apply trực tiếp `k8s/base` song song với GitOps.
 
 ### Checklist Trước Khi Lên Production
 - [ ] AWS Secrets Manager: Đảm bảo đã cập nhật đầy đủ thông tin credentials (MongoDB, JWT, Payment, Email).
@@ -91,13 +91,26 @@ Do thiết kế Layered, bạn **bắt buộc** phải deploy theo thứ tự t�
 
 ---
 
-## 6. Argo CD GitOps
+## 6. CI/CD Separation
+
+- Branch flow: `feature/* -> dev -> release/* -> main`; `hotfix/*` tach tu `main` va phai merge ngược ve `dev` sau khi phat hanh.
+- `dev` la overlay/moi truong phat trien; `release/*` dung cho staging/UAT; `main` la production.
+- `.github/workflows/infra-cd.yml` chi tu dong validate/audit tren push va pull request.
+- Terraform `plan`, `apply` va `destroy` chi chay khi khoi dong `workflow_dispatch` thu cong.
+- Chon `layer=all` de apply theo thu tu `00-networking -> 01-kubernetes -> 02-data -> 03-storage -> 04-observability -> cloudflare`.
+- Chon `action=destroy` va `layer=all` de huy theo thu tu nguoc lai.
+- Pipeline app nam trong repo `ticket-booking-app`; pipeline do khong chay Terraform. Backend chi cap nhat image tag trong Kustomize overlay, sau do Argo CD dong bo workload.
+- Phai apply infra va bootstrap Argo CD truoc lan deploy app dau tien. Push GitOps tiep theo co the kich hoat validate repo infra, nhung khong tu dong apply cloud resources.
+- Khong dung `kubectl apply -k k8s/base` song song voi Argo CD vi se tao hai nguon desired state.
+
+## 7. Argo CD GitOps
 
 Argo CD manifests live in `argocd/`.
 
-- `argocd/bootstrap`: one-time bootstrap resources for the Argo CD namespace.
-- `argocd/applications`: app-of-apps child Applications.
+- `argocd/bootstrap`: project and environment-specific root Applications.
+- `argocd/applications/dev`, `staging`, `prod`: one child Application per cluster environment.
 - `ticketstage-dev`: syncs `k8s/overlays/dev` from branch `dev` with automated prune and self-heal.
+- `ticketstage-staging`: syncs `k8s/overlays/staging` from branch `dev` with automated prune and self-heal.
 - `ticketstage-prod`: syncs `k8s/overlays/prod` from branch `main` with manual sync.
 
 Bootstrap after installing Argo CD:
@@ -106,6 +119,8 @@ Bootstrap after installing Argo CD:
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl -n argocd rollout status deploy/argocd-server
+# Default bootstrap is dev. For staging/prod, apply ticketstage-project.yaml
+# and the matching ticketstage-root-<environment>.yaml instead.
 kubectl apply -k argocd/bootstrap
 ```
 
@@ -113,7 +128,7 @@ Application runtime secrets are intentionally not stored in Git. Create `tickets
 
 ---
 
-## 7. Local Terraform Init Helper
+## 8. Local Terraform Init Helper
 
 To initialize a specific AWS Terraform layer with the correct remote backend values, run:
 

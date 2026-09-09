@@ -158,6 +158,18 @@ variable "log_retention_days" {
   default     = 365
 }
 
+variable "mongodb_backup_enabled" {
+  description = "Enable MongoDB Atlas cloud backup"
+  type        = bool
+  default     = true
+}
+
+variable "mongodb_pit_enabled" {
+  description = "Enable MongoDB Atlas point-in-time recovery"
+  type        = bool
+  default     = true
+}
+
 variable "queue_depth_threshold" {
   description = "Queue depth threshold"
   type        = number

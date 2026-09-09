@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ticketstage-root
+  name: ticketstage-root-prod
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -9,15 +9,12 @@ spec:
   project: default
   source:
     repoURL: https://github.com/PlatypusInAHat/ticket-infra
-    targetRevision: dev
-    path: argocd/applications/dev
+    targetRevision: main
+    path: argocd/applications/prod
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
