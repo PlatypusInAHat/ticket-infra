@@ -6,6 +6,7 @@ resources:
   - serviceaccounts.yaml
   - configmap.yaml
   - backend-microservices.yaml
+  - inventory-summary-cronjob.yaml
   - networkpolicies.yaml
   - servicemonitor.yaml
   - prometheus-rules.yaml

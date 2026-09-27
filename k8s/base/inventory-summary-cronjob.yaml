@@ -1,0 +1,84 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: inventory-summary-sync
+  namespace: ticketstage
+  labels:
+    app.kubernetes.io/name: inventory-summary-sync
+    app.kubernetes.io/component: inventory-sync
+    app.kubernetes.io/part-of: ticketstage
+spec:
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: inventory-summary-sync
+        app.kubernetes.io/component: inventory-sync
+        app.kubernetes.io/part-of: ticketstage
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 240
+      ttlSecondsAfterFinished: 300
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: inventory-summary-sync
+            app.kubernetes.io/component: inventory-sync
+            app.kubernetes.io/part-of: ticketstage
+        spec:
+          serviceAccountName: inventory-summary-sync
+          automountServiceAccountToken: false
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: inventory-sync
+              image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-catalog-service:0.0.0-placeholder
+              imagePullPolicy: Always
+              command: ["node", "scripts/syncInventoryBucketSummaries.js"]
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: NODE_ENV
+                  value: production
+                - name: CATALOG_MONGODB_URI
+                  valueFrom:
+                    secretKeyRef:
+                      name: ticketstage-secrets
+                      key: CATALOG_MONGODB_URI
+                - name: SERVICE_NAME
+                  value: catalog-inventory-sync
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 96Mi
+                  ephemeral-storage: 32Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+                  ephemeral-storage: 128Mi
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: inventory-summary-sync
+  namespace: ticketstage
+automountServiceAccountToken: false

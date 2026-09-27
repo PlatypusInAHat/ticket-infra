@@ -15,6 +15,16 @@ data "terraform_remote_state" "kubernetes" {
   }
 }
 
+data "terraform_remote_state" "data" {
+  backend = "s3"
+
+  config = {
+    bucket = var.terraform_state_bucket
+    key    = "${var.environment}/02-data/terraform.tfstate"
+    region = var.terraform_state_region
+  }
+}
+
 module "ecr" {
   source = "../../modules/ecr"
 
@@ -59,6 +69,8 @@ module "secrets_manager" {
   payment_credentials       = var.payment_credentials
   email_provider            = var.email_provider
   email_credentials         = var.email_credentials
+  enable_redis              = try(data.terraform_remote_state.data.outputs.redis_enabled, false)
+  redis_url                 = try(data.terraform_remote_state.data.outputs.redis_url, "")
 
   eks_service_account_role_arn = var.eks_service_account_role_arn
 

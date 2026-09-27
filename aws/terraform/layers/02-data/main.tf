@@ -81,6 +81,26 @@ module "amazon_mq" {
   tags = local.common_tags
 }
 
+module "elasticache_redis" {
+  source = "../../modules/elasticache-redis"
+
+  enable_redis                = var.enable_redis
+  environment                 = var.environment
+  vpc_id                      = data.terraform_remote_state.networking.outputs.vpc_id
+  vpc_cidr                    = data.terraform_remote_state.networking.outputs.vpc_cidr
+  subnet_ids                  = data.terraform_remote_state.networking.outputs.private_subnets
+  eks_nodes_security_group_id = data.terraform_remote_state.networking.outputs.eks_nodes_security_group_id
+  node_type                   = var.redis_node_type
+  engine_version              = var.redis_engine_version
+  num_cache_clusters          = var.redis_num_cache_clusters
+  multi_az_enabled            = var.redis_multi_az_enabled
+  auth_token                  = var.redis_auth_token
+  apply_immediately           = var.redis_apply_immediately
+  snapshot_retention_limit    = var.redis_snapshot_retention_limit
+
+  tags = local.common_tags
+}
+
 locals {
   common_tags = merge(
     var.tags,

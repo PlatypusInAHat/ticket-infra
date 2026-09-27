@@ -40,3 +40,28 @@ output "mq_connection_string" {
   value       = module.amazon_mq.broker_connection_string
   sensitive   = true
 }
+
+output "redis_replication_group_id" {
+  description = "Managed Redis replication group ID"
+  value       = module.elasticache_redis.replication_group_id
+}
+
+output "redis_endpoint" {
+  description = "Managed Redis primary endpoint"
+  value       = module.elasticache_redis.endpoint
+}
+
+output "redis_port" {
+  description = "Managed Redis port"
+  value       = module.elasticache_redis.port
+}
+
+output "redis_enabled" {
+  value = var.enable_redis
+}
+
+output "redis_url" {
+  description = "Sensitive TLS Redis URL for secret injection"
+  value       = module.elasticache_redis.redis_url
+  sensitive   = true
+}

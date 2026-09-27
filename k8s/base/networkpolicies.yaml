@@ -1,6 +1,21 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: allow-inventory-summary-mongo-egress
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: inventory-summary-sync
+  policyTypes: [Egress]
+  egress:
+    - ports:
+        - protocol: TCP
+          port: 27017
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: default-deny-ticketstage-app-ingress
   namespace: ticketstage
 spec:

@@ -158,6 +158,56 @@ variable "log_retention_days" {
   default     = 365
 }
 
+# Managed Redis (disabled by default to keep dev cost low)
+variable "enable_redis" {
+  description = "Create ElastiCache Redis for shared rate limiting"
+  type        = bool
+  default     = false
+}
+
+variable "redis_node_type" {
+  description = "ElastiCache Redis node type"
+  type        = string
+  default     = "cache.t4g.micro"
+}
+
+variable "redis_engine_version" {
+  description = "Redis engine version"
+  type        = string
+  default     = "7.1"
+}
+
+variable "redis_num_cache_clusters" {
+  description = "Redis cache nodes; one node is cost optimized, multiple nodes enable failover"
+  type        = number
+  default     = 1
+}
+
+variable "redis_multi_az_enabled" {
+  description = "Enable Redis Multi-AZ when replicas are configured"
+  type        = bool
+  default     = false
+}
+
+variable "redis_auth_token" {
+  description = "Redis AUTH token; provide through a sensitive tfvars/CI input when Redis is enabled"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "redis_apply_immediately" {
+  description = "Apply Redis changes immediately"
+  type        = bool
+  default     = false
+}
+
+variable "redis_snapshot_retention_limit" {
+  description = "Number of daily Redis snapshots to retain"
+  type        = number
+  default     = 1
+}
+
 variable "mongodb_backup_enabled" {
   description = "Enable MongoDB Atlas cloud backup"
   type        = bool

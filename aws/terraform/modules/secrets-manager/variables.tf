@@ -74,6 +74,19 @@ variable "rabbitmq_url" {
   sensitive   = true
 }
 
+variable "enable_redis" {
+  description = "Whether to create the Redis URL secret"
+  type        = bool
+  default     = false
+}
+
+variable "redis_url" {
+  description = "Sensitive TLS Redis connection URL from the data layer"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "payment_provider" {
   description = "Payment provider name (e.g., vnpay, momo)"
   type        = string

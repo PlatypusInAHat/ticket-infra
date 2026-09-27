@@ -40,6 +40,10 @@ rabbitmq_version   = "3.12.13"
 mq_instance_type   = "mq.t3.micro"     # Free tier eligible
 mq_deployment_mode = "SINGLE_INSTANCE" # Cheaper than ACTIVE_STANDBY
 
+# Managed Redis is disabled by default for the student/demo budget.
+# Enable only after setting a secret auth token and accepting ElastiCache cost.
+enable_redis = false
+
 # CloudFront
 cloudfront_cache_default_ttl = 3600
 

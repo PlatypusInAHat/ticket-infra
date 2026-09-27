@@ -52,6 +52,16 @@ For multi-pod rate limiting, provision Redis/ElastiCache and store its URL in
 `ticketstage-secrets`. Only then change `RATE_LIMIT_STORE` from `mongo` to
 `redis`; do not use the placeholder endpoint in the example secret.
 
+The Terraform data layer creates ElastiCache only when `enable_redis=true` and
+requires a sensitive `redis_auth_token`. Apply layer `02-data` before layer
+`03-storage`; the latter stores the generated TLS URL in Secrets Manager. The
+Kubernetes secret still needs to be synchronized from Secrets Manager by the
+chosen secret delivery process before switching the ConfigMap to Redis.
+
+`inventory-summary-sync` runs every minute with `concurrencyPolicy: Forbid`.
+It uses the catalog-service image and performs aggregate/bulk updates for
+bucket inventory, so it does not need Kubernetes API permissions.
+
 ## Images
 
 Use overlays to replace the base placeholder image:

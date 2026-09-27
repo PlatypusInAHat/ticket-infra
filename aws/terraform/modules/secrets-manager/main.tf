@@ -145,6 +145,23 @@ resource "aws_secretsmanager_secret_version" "rabbitmq_credentials" {
   })
 }
 
+# Managed Redis connection URL. Created only after the data layer provisions Redis.
+resource "aws_secretsmanager_secret" "redis_url" {
+  count                   = var.enable_redis ? 1 : 0
+  name_prefix             = "${var.environment}/redis/connection-url-"
+  description             = "TLS Redis connection URL for ${var.environment}"
+  recovery_window_in_days = var.recovery_window_days
+  kms_key_id              = local.secrets_kms_key_id
+
+  tags = var.tags
+}
+
+resource "aws_secretsmanager_secret_version" "redis_url" {
+  count         = var.enable_redis ? 1 : 0
+  secret_id     = aws_secretsmanager_secret.redis_url[0].id
+  secret_string = jsonencode({ url = var.redis_url })
+}
+
 # Payment Service Credentials
 resource "aws_secretsmanager_secret" "payment_credentials" {
   count                   = var.payment_provider != "" ? 1 : 0
