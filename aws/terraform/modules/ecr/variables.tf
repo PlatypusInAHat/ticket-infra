@@ -31,6 +31,7 @@ variable "repository_names" {
     "booking-service",
     "checkin-service",
     "notification-service",
+    "waiting-room-service",
     "frontend"
   ]
 }

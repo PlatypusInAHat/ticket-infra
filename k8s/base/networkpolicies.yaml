@@ -1,6 +1,24 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: allow-waiting-room-service-ingress
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: waiting-room-service
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+      ports:
+        - { protocol: TCP, port: 5106 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: allow-inventory-summary-mongo-egress
   namespace: ticketstage
 spec:
@@ -176,6 +194,7 @@ spec:
         - { protocol: TCP, port: 5103 }
         - { protocol: TCP, port: 5104 }
         - { protocol: TCP, port: 5105 }
+        - { protocol: TCP, port: 5106 }
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -241,6 +260,7 @@ spec:
                   - booking-service
                   - checkin-service
                   - notification-service
+                  - waiting-room-service
       ports:
         - protocol: TCP
           port: 5101
@@ -252,6 +272,25 @@ spec:
           port: 5104
         - protocol: TCP
           port: 5105
+        - protocol: TCP
+          port: 5106
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-waiting-room-redis-egress
+  namespace: ticketstage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: waiting-room-service
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+      ports:
+        - { protocol: TCP, port: 6379 }
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

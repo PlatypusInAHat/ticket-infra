@@ -48,7 +48,7 @@ spec:
         - name: api-gateway
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-api-gateway:0.0.0-placeholder
           imagePullPolicy: Always
-          command: ["npm", "run", "start:gateway"]
+          command: ["node", "microservices/api-gateway/server.js"]
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -115,6 +115,16 @@ spec:
                 configMapKeyRef:
                   name: ticketstage-config
                   key: NOTIFICATION_SERVICE_URL
+            - name: WAITING_ROOM_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: WAITING_ROOM_SERVICE_URL
+            - name: WAITING_ROOM_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: WAITING_ROOM_ENABLED
           startupProbe:
             httpGet:
               path: /health/live
@@ -213,7 +223,7 @@ spec:
         - name: auth-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-auth-service:0.0.0-placeholder
           imagePullPolicy: Always
-          command: ["npm", "run", "start:auth-service"]
+          command: ["node", "microservices/auth-service/server.js"]
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -455,7 +465,7 @@ spec:
         - name: catalog-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-catalog-service:0.0.0-placeholder
           imagePullPolicy: Always
-          command: ["npm", "run", "start:catalog-service"]
+          command: ["node", "microservices/catalog-service/server.js"]
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -608,7 +618,7 @@ spec:
         - name: booking-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-booking-service:0.0.0-placeholder
           imagePullPolicy: Always
-          command: ["npm", "run", "start:booking-service"]
+          command: ["node", "microservices/booking-service/server.js"]
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -665,6 +675,11 @@ spec:
                 configMapKeyRef:
                   name: ticketstage-config
                   key: BOOKING_QUEUE_ENABLED
+            - name: WAITING_ROOM_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: WAITING_ROOM_ENABLED
             - name: BOOKING_QUEUE_CONCURRENCY
               valueFrom:
                 configMapKeyRef:
@@ -906,7 +921,7 @@ spec:
         - name: checkin-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-checkin-service:0.0.0-placeholder
           imagePullPolicy: Always
-          command: ["npm", "run", "start:checkin-service"]
+          command: ["node", "microservices/checkin-service/server.js"]
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -1073,7 +1088,7 @@ spec:
         - name: notification-service
           image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-notification-service:0.0.0-placeholder
           imagePullPolicy: Always
-          command: ["npm", "run", "start:notification-service"]
+          command: ["node", "microservices/notification-service/server.js"]
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

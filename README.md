@@ -14,7 +14,8 @@ Hệ thống được thiết kế theo mô hình microservices, chạy trên n�
 4. **Networking**: Public traffic đi từ Cloudflare vào Kubernetes qua **AWS Load Balancer Controller** và Ingress, không còn ALB Terraform riêng.
 5. **Database (MongoDB Atlas)**: Lưu trữ dữ liệu chính. Có thiết lập Private Endpoint (VPC Peering) để đảm bảo kết nối bảo mật từ EKS.
 6. **Message Queue (RabbitMQ)**: Amazon MQ xử lý hàng đợi tin nhắn bất đồng bộ, đặc biệt là trong luồng Đặt vé (Booking) có lưu lượng truy cập cao. KEDA được sử dụng để tự động scale (HPA) các worker pods dựa trên chiều dài của queue.
-7. **Observability**: CloudWatch Log Groups, Alarms, và Metrics để giám sát toàn hệ thống. Trên Kubernetes có cài đặt `kube-prometheus-stack` (Prometheus, Grafana).
+7. **Virtual Waiting Room**: `waiting-room-service` trên EKS dùng Redis/ElastiCache để giữ FIFO, active checkout lease và admission rate. API Gateway là bouncer kiểm tra signed token trước khi chuyển request tạo booking.
+8. **Observability**: CloudWatch Log Groups, Alarms, và Metrics để giám sát toàn hệ thống. Trên Kubernetes có cài đặt `kube-prometheus-stack` (Prometheus, Grafana).
 
 ---
 
@@ -25,7 +26,7 @@ Cấu trúc mã Terraform (`infra/aws/terraform`) được tổ chức theo mô 
 ### Các Layers
 - **`00-networking`**: VPC, Subnets, NAT Gateways, và Security Groups.
 - **`01-kubernetes`**: EKS Cluster, Node Groups (System On-Demand & App Spot instances), OIDC, và IAM Roles.
-- **`02-data`**: MongoDB Atlas (Database) và Amazon MQ (RabbitMQ).
+- **`02-data`**: MongoDB Atlas, Amazon MQ (RabbitMQ) và ElastiCache Redis tùy chọn cho waiting room/rate limit shared store.
 - **`03-storage`**: Amazon S3, CloudFront (Frontend hosting), và ECR (Container Registry). Các cấu hình bảo mật ứng dụng được quản lý qua AWS Secrets Manager.
 - **`04-observability`**: CloudWatch Dashboards, Log Groups, Metric Alarms, và SNS Topics để nhận cảnh báo.
 
@@ -57,7 +58,7 @@ Cấu hình Cloudflare được lưu tại `infra/cloudflare`:
 
 Additional hot-sale controls:
 - **Bot Score Challenge**: Set `bot_score_challenge_enabled=true` to challenge checkout traffic with low `cf.bot_management.score`. Enable only on zones with Cloudflare Bot Management.
-- **Waiting Room**: Configure `waiting_rooms` for major ticket launches. Keep rooms `suspended=true` until the on-sale window, then enable after confirming Cloudflare entitlement and capacity.
+- **Waiting Room**: Waiting room chính nằm trong ứng dụng và không phụ thuộc Cloudflare entitlement. Cloudflare Waiting Room trả phí chỉ là phương án edge dự phòng nếu sau này cần chặn traffic trước origin.
 
 ## 5. Deployment Quickstart & Checklist
 
@@ -87,7 +88,7 @@ Do thiết kế Layered, bạn **bắt buộc** phải deploy theo thứ tự t�
 - [ ] AWS Secrets Manager: Đảm bảo đã cập nhật đầy đủ thông tin credentials (MongoDB, JWT, Payment, Email).
 - [ ] MongoDB Atlas: Kiểm tra lại IP Whitelist và VPC Peering trạng thái *Active*.
 - [ ] Cloudflare: Bật `Proxy (Orange Cloud)` cho tất cả DNS records của Web và API. Nâng Security Level lên `High` nếu chuẩn bị mở bán vé lớn.
-- [ ] Load Testing: Đã chạy kịch bản K6/JMeter để kiểm chứng KEDA scale-out worker pods khi RabbitMQ queue tăng đột biến.
+- [ ] Load Testing: Đã kiểm chứng waiting-room admission rate/capacity, atomic inventory p95/p99, HPA và KEDA trước giờ mở bán.
 
 ---
 

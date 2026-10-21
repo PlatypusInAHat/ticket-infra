@@ -7,6 +7,7 @@ output "ecr_backend_repository_urls" {
     booking_service      = module.ecr.repository_urls["booking-service"]
     checkin_service      = module.ecr.repository_urls["checkin-service"]
     notification_service = module.ecr.repository_urls["notification-service"]
+    waiting_room_service = module.ecr.repository_urls["waiting-room-service"]
   }
 }
 

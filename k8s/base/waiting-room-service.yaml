@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: waiting-room-service
+  namespace: ticketstage
+  labels: &labels
+    app.kubernetes.io/name: waiting-room-service
+    app.kubernetes.io/part-of: ticketstage
+spec:
+  replicas: 2
+  selector:
+    matchLabels: *labels
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      serviceAccountName: waiting-room-service
+      automountServiceAccountToken: false
+      nodeSelector:
+        workload: general
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: *labels
+      containers:
+        - name: waiting-room-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ticketstage-waiting-room-service:0.0.0-placeholder
+          imagePullPolicy: Always
+          command: ["node", "microservices/waiting-room-service/server.js"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: http
+              containerPort: 5106
+          envFrom:
+            - configMapRef:
+                name: ticketstage-observability-config
+            - secretRef:
+                name: ticketstage-secrets
+          env:
+            - name: WAITING_ROOM_SERVICE_PORT
+              value: "5106"
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: NODE_ENV
+            - name: WAITING_ROOM_ACTIVE_CAPACITY
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: WAITING_ROOM_ACTIVE_CAPACITY
+            - name: WAITING_ROOM_ADMISSION_RATE_PER_MINUTE
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: WAITING_ROOM_ADMISSION_RATE_PER_MINUTE
+            - name: WAITING_ROOM_ACCESS_TTL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: WAITING_ROOM_ACCESS_TTL_SECONDS
+            - name: WAITING_ROOM_ENTRY_TTL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: ticketstage-config
+                  key: WAITING_ROOM_ENTRY_TTL_SECONDS
+          startupProbe:
+            httpGet: { path: /health/live, port: 5106 }
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 5106 }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health/live, port: 5106 }
+            initialDelaySeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+              ephemeral-storage: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+              ephemeral-storage: 512Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: waiting-room-service
+  namespace: ticketstage
+  labels:
+    app.kubernetes.io/name: waiting-room-service
+    app.kubernetes.io/part-of: ticketstage
+spec:
+  selector:
+    app.kubernetes.io/name: waiting-room-service
+  ports:
+    - name: http
+      port: 5106
+      targetPort: 5106
