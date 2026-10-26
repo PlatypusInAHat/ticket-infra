@@ -90,6 +90,8 @@ Before deployment, replace the placeholder account and region in the overlay ima
 
 Điều chỉnh `WAITING_ROOM_ACTIVE_CAPACITY` theo throughput booking đo được và đặt `WAITING_ROOM_ADMISSION_RATE_PER_MINUTE` thấp hơn giới hạn write path của catalog. Managed Redis vẫn là tùy chọn trong Terraform; phải bật tại layer `02-data` trước khi bật workload này trên môi trường triển khai.
 
-Luồng chuẩn: web/mobile join hàng chờ, poll trạng thái, nhận signed token, gửi token trong `x-waiting-room-token`, API Gateway xác minh rồi booking-service đối chiếu event thật từ catalog. Mỗi admission chỉ tạo được một booking nhờ unique index `security.waitingRoomEntryId`.
+Luồng chuẩn: website join hàng chờ, poll trạng thái, nhận signed token, gửi token trong `x-waiting-room-token`, API Gateway xác minh rồi booking-service đối chiếu event thật từ catalog. Mỗi admission chỉ tạo được một booking nhờ unique index `security.waitingRoomEntryId`.
+
+Mobile và NFC hiện nằm ngoài phạm vi đồ án; các manifest Kubernetes hiện triển khai website/backend và check-in bằng QR/barcode.
 
 Không bật lại `BOOKING_QUEUE_ENABLED` để thay thế waiting room. Booking execution queue giữ `false`; Redis waiting room chỉ điều tiết admission và catalog atomic reservation vẫn chống oversell.
