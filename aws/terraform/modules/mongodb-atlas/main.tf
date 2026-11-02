@@ -67,6 +67,16 @@ resource "mongodbatlas_project_ip_access_list" "aws_vpc" {
   comment    = var.ip_whitelist_comment
 }
 
+# Without PrivateLink, traffic from private subnets reaches Atlas through the
+# NAT Gateway public IPs, so the VPC CIDR entry above does not match it.
+resource "mongodbatlas_project_ip_access_list" "egress" {
+  for_each = toset(var.egress_cidr_blocks)
+
+  project_id = mongodbatlas_project.main.id
+  cidr_block = each.value
+  comment    = "AWS NAT Gateway egress"
+}
+
 # Database User
 resource "mongodbatlas_database_user" "app" {
   project_id         = mongodbatlas_project.main.id

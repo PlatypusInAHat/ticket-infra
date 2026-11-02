@@ -1,0 +1,37 @@
+# booking-service load arrives as HTTP bursts when a sale opens. CPU-based
+# scaling reacts only after pods are already saturated and new nodes take a few
+# minutes, so the cron trigger raises the floor before the known start time.
+# KEDA uses the highest replica count requested by any trigger.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: booking-service
+  namespace: ticketstage
+spec:
+  scaleTargetRef:
+    name: booking-service
+  minReplicaCount: 1
+  maxReplicaCount: 40
+  pollingInterval: 15
+  cooldownPeriod: 300
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 300
+  triggers:
+    # Keep this trigger first: overlays patch it by index (/spec/triggers/0).
+    - type: cron
+      metadata:
+        timezone: Asia/Ho_Chi_Minh
+        start: "45 19 31 12 *"
+        end: "0 22 31 12 *"
+        desiredReplicas: "6"
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "60"
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "75"

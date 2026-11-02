@@ -57,9 +57,15 @@ foreach ($layer in $layers) {
       -backend-config="region=$StateRegion" `
       -backend-config="dynamodb_table=$LockTable" `
       -backend-config="encrypt=true"
+    if ($LASTEXITCODE -ne 0) {
+      throw "terraform init failed for $layer"
+    }
 
     if (-not $SkipValidate) {
       terraform validate
+      if ($LASTEXITCODE -ne 0) {
+        throw "terraform validate failed for $layer"
+      }
     }
   } finally {
     Pop-Location

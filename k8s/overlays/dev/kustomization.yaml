@@ -55,3 +55,23 @@ patches:
       - op: replace
         path: /spec/rules/0/host
         value: api-dev.ticketstage.example.com
+  # Dev runs on 2-3 small nodes: start every service at 1 pod and let HPA add
+  # more under load. PDBs are relaxed so cluster-autoscaler can drain nodes.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: HorizontalPodAutoscaler
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+  - target:
+      kind: PodDisruptionBudget
+    patch: |-
+      - op: replace
+        path: /spec/minAvailable
+        value: 0

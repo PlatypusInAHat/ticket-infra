@@ -1,0 +1,99 @@
+#!/bin/bash
+# First-boot provisioning for the TicketStage compose host (Amazon Linux 2023, arm64).
+# Rendered by Terraform templatefile(): bash variables are written as $VAR, never
+# with braces, so they do not clash with template interpolation.
+set -euo pipefail
+exec > >(tee -a /var/log/ticketstage-bootstrap.log) 2>&1
+
+REGION="${region}"
+APP_DIR=/opt/ticketstage/app
+
+get_param() {
+  aws ssm get-parameter --region "$REGION" --name "$1" --with-decryption \
+    --query Parameter.Value --output text
+}
+
+echo "== packages"
+dnf install -y docker git
+systemctl enable --now docker
+
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -fsSL -o /usr/local/lib/docker/cli-plugins/docker-compose \
+  "https://github.com/docker/compose/releases/download/${docker_compose_version}/docker-compose-linux-aarch64"
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+docker compose version
+
+echo "== swap (headroom for image builds and MongoDB)"
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo "/swapfile none swap sw 0 0" >> /etc/fstab
+fi
+
+echo "== app source"
+REPO_URL="${app_repo_url}"
+GIT_TOKEN_PARAMETER="${git_token_parameter}"
+if [ -n "$GIT_TOKEN_PARAMETER" ]; then
+  GIT_TOKEN="$(get_param "$GIT_TOKEN_PARAMETER")"
+  CLONE_URL="$(echo "$REPO_URL" | sed "s#^https://#https://x-access-token:$GIT_TOKEN@#")"
+else
+  CLONE_URL="$REPO_URL"
+fi
+if [ ! -d "$APP_DIR/.git" ]; then
+  mkdir -p "$(dirname "$APP_DIR")"
+  git clone --depth 1 --branch "${app_repo_ref}" "$CLONE_URL" "$APP_DIR"
+  # Do not leave the token in .git/config.
+  git -C "$APP_DIR" remote set-url origin "$REPO_URL"
+fi
+
+echo "== compose .env from SSM"
+umask 077
+get_param "${app_env_parameter}" > "$APP_DIR/.env"
+umask 022
+
+echo "== systemd unit (compose services have no restart policy, so start them on boot)"
+cat > /etc/systemd/system/ticketstage.service <<UNIT
+[Unit]
+Description=TicketStage docker compose stack
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=$APP_DIR
+ExecStart=/usr/bin/docker compose up -d --build
+ExecStop=/usr/bin/docker compose stop
+TimeoutStartSec=1800
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now ticketstage.service
+
+echo "== seed demo data (first boot only)"
+if [ ! -f /opt/ticketstage/.seeded ]; then
+  # MongoDB replica sets initialise via healthcheck; retry until they accept writes.
+  for attempt in $(seq 1 20); do
+    if (cd "$APP_DIR" && docker compose --profile tools run --rm seed-microservices); then
+      touch /opt/ticketstage/.seeded
+      break
+    fi
+    echo "seed attempt $attempt failed, retrying in 15s"
+    sleep 15
+  done
+fi
+
+echo "== cloudflared"
+TUNNEL_TOKEN="$(get_param "${tunnel_token_parameter}")"
+docker rm -f cloudflared >/dev/null 2>&1 || true
+# Token passed as env var (TUNNEL_TOKEN) rather than a CLI argument.
+docker run -d --name cloudflared --restart unless-stopped --network host \
+  -e TUNNEL_TOKEN="$TUNNEL_TOKEN" \
+  "cloudflare/cloudflared:${cloudflared_version}" tunnel --no-autoupdate run
+unset TUNNEL_TOKEN GIT_TOKEN
+
+echo "== done"

@@ -55,6 +55,12 @@ variable "eip_domain" {
   default     = "vpc"
 }
 
+variable "single_nat_gateway" {
+  description = "Use one NAT Gateway shared by all private subnets (cheaper, not AZ-redundant)"
+  type        = bool
+  default     = false
+}
+
 variable "default_route_cidr" {
   description = "Default route CIDR block (0.0.0.0/0)"
   type        = string

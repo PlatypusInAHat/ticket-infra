@@ -1,0 +1,44 @@
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: rabbitmq-trigger-auth
+  namespace: ticketstage
+spec:
+  secretTargetRef:
+    - parameter: host
+      name: ticketstage-secrets
+      key: EVENT_BROKER_URL
+---
+# notification-service consumes domain events from queue
+# "notification-service.events" (see app backend/shared/eventBus.js) and turns
+# them into email jobs. A growing backlog there means email work is piling up.
+# CPU/memory triggers keep the behaviour of the base HPA this replaces.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: notification-service
+  namespace: ticketstage
+spec:
+  scaleTargetRef:
+    name: notification-service
+  minReplicaCount: 2
+  maxReplicaCount: 12
+  pollingInterval: 15
+  cooldownPeriod: 300
+  triggers:
+    - type: rabbitmq
+      metadata:
+        protocol: amqp
+        queueName: notification-service.events
+        mode: QueueLength
+        value: "100"
+      authenticationRef:
+        name: rabbitmq-trigger-auth
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "65"
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "75"

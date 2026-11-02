@@ -20,12 +20,35 @@ kubectl create secret generic ticketstage-secrets \
   --from-literal=CATALOG_MONGODB_URI="replace-with-real-value" \
   --from-literal=BOOKING_MONGODB_URI="replace-with-real-value" \
   --from-literal=CHECKIN_MONGODB_URI="replace-with-real-value" \
+  --from-literal=NOTIFICATION_MONGODB_URI="replace-with-real-value" \
   --from-literal=EVENT_BROKER_URL="replace-with-real-value" \
   --from-literal=REDIS_URL="rediss://default:replace-me@elasticache-endpoint:6379" \
   --from-literal=WAITING_ROOM_TOKEN_SECRET="replace-with-at-least-32-random-characters"
 ```
 
+This is the minimum set needed to boot all seven services. Payment (`VNPAY_*`, `MOMO_*`) and email (`EMAIL_*`, `SES_SMTP_*`) settings are read from the same secret; see `k8s/base/secrets.example.yaml` for the full key list. With Amazon MQ, `EVENT_BROKER_URL` is the broker's `amqps://<user>:<password>@<broker-id>.mq.<region>.amazonaws.com:5671` endpoint.
+
 Prefer External Secrets or Sealed Secrets for real deployments.
+
+## Prerequisites
+
+- AWS Load Balancer Controller for the `alb` Ingress and `metrics-server` for HPA, both installed by Terraform layer `01-kubernetes`.
+- `kube-prometheus-stack` CRDs (`ServiceMonitor`, `PrometheusRule`), installed by Terraform layer `04-observability`. Apply that layer first or the overlay will fail.
+
+`scripts/stack.ps1 -Action up` generates `k8s/secrets/<env>.env` and creates the secret from it, so the manual `kubectl create secret` above is only needed without the script.
+
+## Optional KEDA components
+
+Install KEDA, then list the component under `components:` in an overlay. Each component deletes the plain HPA of the Deployment it scales.
+
+- `components/keda`: `notification-service` on the length of its RabbitMQ queue `notification-service.events`, plus CPU/memory.
+- `components/keda-presale`: `booking-service` on a `cron` window (timezone `Asia/Ho_Chi_Minh`) plus CPU/memory. Patch `/spec/triggers/0/metadata/start|end|desiredReplicas` per sale, starting about 15 minutes before tickets go on sale; see the example in its `kustomization.yaml`.
+
+## Dev overlay sizing
+
+`overlays/dev` starts every Deployment at 1 replica, sets every HPA `minReplicas` to 1 and every PDB `minAvailable` to 0 so the stack fits 2-3 small nodes and cluster-autoscaler can drain nodes.
+
+The image tags in `overlays/*/kustomization.yaml` are written by the app repo's CI; see the root `README.md`, section Argo CD GitOps.
 
 ## HPA prerequisites
 
@@ -73,7 +96,7 @@ kubectl apply -k k8s/overlays/staging
 kubectl apply -k k8s/overlays/prod
 ```
 
-Before deployment, replace the placeholder account and region in the overlay image names with your real ECR registry. Backend services use independent repositories, for example:
+The app repo's CI writes the real ECR image and tag into the overlay on every release (`kustomize edit set image`), replacing the placeholder account/region below. Before the first CI run, a manual apply still points at the placeholder. Backend services use independent repositories, for example:
 
 ```text
 123456789012.dkr.ecr.us-east-1.amazonaws.com/dev/api-gateway

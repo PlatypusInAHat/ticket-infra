@@ -5,25 +5,36 @@ environment  = "dev"
 aws_region   = "us-east-1"
 project_name = "TicketBooking"
 
-# VPC Configuration (Minimizing to 2 AZs for ALB requirement -> 2 NAT Gateways)
-vpc_cidr        = "10.0.0.0/16"
-public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
-private_subnets = ["10.0.11.0/24", "10.0.12.0/24"]
+# VPC Configuration (2 AZs are required by the ALB; one shared NAT Gateway to save ~$33/month)
+vpc_cidr           = "10.0.0.0/16"
+public_subnets     = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnets    = ["10.0.11.0/24", "10.0.12.0/24"]
+single_nat_gateway = true
 
-# EKS Configuration (Ultra-cheap nodes)
+# EKS Configuration
 kubernetes_version = "1.29"
 
-# System Node Group (On-Demand, Minimum viable size)
+# System Node Group (On-Demand). Untainted so it also runs monitoring, Argo CD
+# and app pods instead of sitting idle; t4g.small (2 GiB) is too small for that.
 system_node_group_desired_size   = 1
 system_node_group_min_size       = 1
 system_node_group_max_size       = 2
-system_node_group_instance_types = ["t4g.small"] # ARM, very cheap
+system_node_group_instance_types = ["t4g.medium"] # ARM, 2 vCPU / 4 GiB
+system_node_taint_enabled        = false
 
-# App Node Group (Spot for cost optimization)
+# App Node Group (Spot). Several ARM types with 4 GiB to lower interruption risk;
+# max 4 nodes so HPA has room to scale during load tests.
 app_spot_node_group_desired_size   = 1
 app_spot_node_group_min_size       = 1
-app_spot_node_group_max_size       = 2
-app_spot_node_group_instance_types = ["t4g.small"] # ARM, very cheap
+app_spot_node_group_max_size       = 4
+app_spot_node_group_instance_types = ["t4g.medium", "m6g.medium", "m7g.medium"]
+
+# Critical App Node Group (On-Demand). Deployments pinned to workload=critical
+# need at least one node; the module default (2x m7g) is sized for prod.
+app_on_demand_node_group_desired_size   = 1
+app_on_demand_node_group_min_size       = 1
+app_on_demand_node_group_max_size       = 2
+app_on_demand_node_group_instance_types = ["t4g.medium"]
 
 # MongoDB Atlas (Free Tier)
 mongodb_version        = "7.0"

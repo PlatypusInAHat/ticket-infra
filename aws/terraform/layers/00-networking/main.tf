@@ -14,6 +14,7 @@ module "vpc" {
   availability_zones = slice(data.aws_availability_zones.available.names, 0, length(var.public_subnets))
   public_subnets     = var.public_subnets
   private_subnets    = var.private_subnets
+  single_nat_gateway = var.single_nat_gateway
 
   tags = local.common_tags
 }

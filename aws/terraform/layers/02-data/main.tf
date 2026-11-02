@@ -31,6 +31,10 @@ module "mongodb_atlas" {
   database_password       = var.mongodb_password
   enable_private_endpoint = var.mongodb_enable_private_endpoint
   enable_outage_test      = var.mongodb_enable_outage_test
+
+  egress_cidr_blocks = var.mongodb_enable_private_endpoint ? [] : [
+    for ip in data.terraform_remote_state.networking.outputs.nat_gateway_ips : "${ip}/32"
+  ]
 }
 
 module "amazon_mq" {

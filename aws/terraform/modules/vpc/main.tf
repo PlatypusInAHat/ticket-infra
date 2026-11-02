@@ -186,9 +186,15 @@ resource "aws_subnet" "private" {
   })
 }
 
+locals {
+  # Keys are AZ indexes as strings ("0", "1", ...). With single_nat_gateway only
+  # "0" is kept, so switching modes never replaces the first NAT Gateway.
+  nat_gateway_keys = var.single_nat_gateway ? ["0"] : keys({ for idx, az in var.availability_zones : idx => az })
+}
+
 # Elastic IPs for NAT Gateways
 resource "aws_eip" "nat" {
-  for_each = toset(keys({ for idx, az in var.availability_zones : idx => az }))
+  for_each = toset(local.nat_gateway_keys)
   domain   = var.eip_domain
 
   depends_on = [aws_internet_gateway.main]
@@ -200,7 +206,7 @@ resource "aws_eip" "nat" {
 
 # NAT Gateways
 resource "aws_nat_gateway" "main" {
-  for_each      = toset(keys({ for idx, az in var.availability_zones : idx => az }))
+  for_each      = toset(local.nat_gateway_keys)
   allocation_id = aws_eip.nat[each.key].id
   subnet_id     = aws_subnet.public[each.key].id
 
@@ -239,7 +245,7 @@ resource "aws_route_table" "private" {
 
   route {
     cidr_block     = var.default_route_cidr
-    nat_gateway_id = aws_nat_gateway.main[each.key].id
+    nat_gateway_id = aws_nat_gateway.main[var.single_nat_gateway ? "0" : each.key].id
   }
 
   tags = merge(var.tags, {

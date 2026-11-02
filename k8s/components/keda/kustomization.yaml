@@ -1,0 +1,20 @@
+# Optional KEDA autoscaling. Requires KEDA installed in the cluster.
+# Enable per overlay:
+#   components:
+#     - ../../components/keda
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - keda-rabbitmq.yaml
+
+# KEDA creates its own HPA for the ScaledObject target; two HPAs on the same
+# Deployment fight each other, so drop the plain HPA from base.
+patches:
+  - patch: |-
+      $patch: delete
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: notification-service
+        namespace: ticketstage

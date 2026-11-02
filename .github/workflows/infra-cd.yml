@@ -94,6 +94,7 @@ jobs:
             aws/terraform/layers/02-data \
             aws/terraform/layers/03-storage \
             aws/terraform/layers/04-observability \
+            aws/terraform/standalone/compose-host \
             cloudflare; do
             echo "::group::Validate ${dir}"
             terraform -chdir="${dir}" init -backend=false
@@ -115,6 +116,27 @@ jobs:
           kubectl kustomize argocd/applications/dev >/dev/null
           kubectl kustomize argocd/applications/staging >/dev/null
           kubectl kustomize argocd/applications/prod >/dev/null
+
+          # Optional KEDA components: render them on top of the dev overlay and
+          # make sure each one removed the plain HPA of the Deployment it scales.
+          mkdir -p .ci-render/keda
+          cat > .ci-render/keda/kustomization.yaml <<'EOF'
+          apiVersion: kustomize.config.k8s.io/v1beta1
+          kind: Kustomization
+          resources:
+            - ../../k8s/overlays/dev
+          components:
+            - ../../k8s/components/keda
+            - ../../k8s/components/keda-presale
+          EOF
+          kubectl kustomize .ci-render/keda > .ci-render/keda.yaml
+          for service in notification-service booking-service; do
+            if awk -v svc="$service" 'BEGIN { RS = "\n---\n" } /kind: HorizontalPodAutoscaler/ && $0 ~ ("\n  name: " svc "(\n|$)") { found = 1 } END { exit !found }' .ci-render/keda.yaml; then
+              echo "KEDA component must remove the ${service} HPA"
+              exit 1
+            fi
+          done
+          rm -rf .ci-render
 
   audit:
     name: Audit Code And IaC

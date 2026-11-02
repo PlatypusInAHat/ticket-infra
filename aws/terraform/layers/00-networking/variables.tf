@@ -37,6 +37,12 @@ variable "private_subnets" {
   default     = ["10.0.11.0/24", "10.0.12.0/24", "10.0.13.0/24"]
 }
 
+variable "single_nat_gateway" {
+  description = "Use one NAT Gateway for all private subnets instead of one per AZ"
+  type        = bool
+  default     = false
+}
+
 variable "tags" {
   description = "Common tags"
   type        = map(string)

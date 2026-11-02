@@ -23,4 +23,12 @@ spec:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
       - PrunePropagationPolicy=foreground
+      - RespectIgnoreDifferences=true
+  # HPA owns spec.replicas; without this Argo CD (selfHeal) resets it to the
+  # manifest value after every scale event.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
   revisionHistoryLimit: 10

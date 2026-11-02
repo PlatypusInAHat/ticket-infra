@@ -32,6 +32,7 @@ module "eks" {
 
   vpc_cni_enable_network_policy    = var.vpc_cni_enable_network_policy
   vpc_cni_enable_policy_event_logs = var.vpc_cni_enable_policy_event_logs
+  vpc_cni_enable_prefix_delegation = var.vpc_cni_enable_prefix_delegation
 
   # Node group settings
   system_node_group_desired_size   = var.system_node_group_desired_size
@@ -48,6 +49,9 @@ module "eks" {
   app_on_demand_node_group_min_size       = var.app_on_demand_node_group_min_size
   app_on_demand_node_group_max_size       = var.app_on_demand_node_group_max_size
   app_on_demand_node_group_instance_types = var.app_on_demand_node_group_instance_types
+
+  node_ami_type             = var.node_ami_type
+  system_node_taint_enabled = var.system_node_taint_enabled
 
   tags = local.common_tags
 }

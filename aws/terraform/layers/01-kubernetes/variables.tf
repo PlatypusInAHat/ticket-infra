@@ -54,6 +54,12 @@ variable "vpc_cni_enable_network_policy" {
   default     = true
 }
 
+variable "vpc_cni_enable_prefix_delegation" {
+  description = "Enable VPC CNI prefix delegation to raise the max pods per node."
+  type        = bool
+  default     = true
+}
+
 variable "vpc_cni_enable_policy_event_logs" {
   description = "Enable policy event logs for the VPC CNI network policy agent."
   type        = bool
@@ -133,6 +139,18 @@ variable "app_on_demand_node_group_instance_types" {
   description = "Instance types for critical app On-Demand nodes"
   type        = list(string)
   default     = ["m7g.medium", "m7g.large", "t4g.large"]
+}
+
+variable "system_node_taint_enabled" {
+  description = "Taint the system node group; disable on small clusters so it can run app pods"
+  type        = bool
+  default     = true
+}
+
+variable "node_ami_type" {
+  description = "AMI type for all node groups; must match the instance type architecture"
+  type        = string
+  default     = "AL2023_ARM_64_STANDARD"
 }
 
 variable "tags" {

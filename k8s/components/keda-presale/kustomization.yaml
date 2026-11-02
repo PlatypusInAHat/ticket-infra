@@ -1,0 +1,35 @@
+# Optional pre-scaling for ticket on-sale windows. Requires KEDA in the cluster.
+# Enable per overlay and set the window with a patch, for example:
+#
+#   components:
+#     - ../../components/keda-presale
+#   patches:
+#     - target:
+#         kind: ScaledObject
+#         name: booking-service
+#       patch: |-
+#         - op: replace
+#           path: /spec/triggers/0/metadata/start
+#           value: "45 19 20 12 *"   # 19:45 on 20 Dec, 15 minutes before sale opens
+#         - op: replace
+#           path: /spec/triggers/0/metadata/end
+#           value: "0 22 20 12 *"
+#         - op: replace
+#           path: /spec/triggers/0/metadata/desiredReplicas
+#           value: "10"
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - booking-presale.yaml
+
+# The ScaledObject owns booking-service scaling; drop the plain HPA from base
+# so the two do not fight over replicas.
+patches:
+  - patch: |-
+      $patch: delete
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: booking-service
+        namespace: ticketstage

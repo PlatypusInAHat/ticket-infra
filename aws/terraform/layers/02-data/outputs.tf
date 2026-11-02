@@ -65,3 +65,14 @@ output "redis_url" {
   value       = module.elasticache_redis.redis_url
   sensitive   = true
 }
+
+output "mq_amqp_endpoint" {
+  description = "Amazon MQ AMQPS endpoint without credentials; EVENT_BROKER_URL is amqps://<user>:<password>@<host>:5671"
+  value       = module.amazon_mq.broker_amqp_endpoint
+}
+
+output "mongodb_srv_host" {
+  description = "Atlas SRV host (no credentials), used to build per-service MONGODB URIs"
+  value       = replace(module.mongodb_atlas.cluster_srv_connection_string, "mongodb+srv://", "")
+  sensitive   = true
+}

@@ -134,6 +134,12 @@ variable "scope_type" {
 }
 
 # IP Whitelist
+variable "egress_cidr_blocks" {
+  description = "Public egress CIDRs (e.g. NAT Gateway IPs as /32) allowed to reach Atlas"
+  type        = list(string)
+  default     = []
+}
+
 variable "ip_whitelist_comment" {
   description = "Comment for IP whitelist entry"
   type        = string

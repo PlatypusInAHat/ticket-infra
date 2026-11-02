@@ -34,3 +34,8 @@ output "security_group_id" {
   description = "Security group ID for MQ"
   value       = aws_security_group.mq.id
 }
+
+output "broker_amqp_endpoint" {
+  description = "AMQPS endpoint (amqps://host:5671); RabbitMQ brokers expose no ip_address"
+  value       = aws_mq_broker.rabbitmq.instances[0].endpoints[0]
+}

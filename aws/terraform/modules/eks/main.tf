@@ -143,6 +143,13 @@ resource "aws_eks_addon" "vpc_cni" {
     nodeAgent = {
       enablePolicyEventLogs = tostring(var.vpc_cni_enable_policy_event_logs)
     }
+    # Prefix delegation assigns /28 prefixes instead of single IPs, lifting the
+    # per-node pod limit on small instances (t4g.small: 11 -> 98, t4g.medium: 17 -> 110).
+    # Only nodes created after it is enabled get the higher limit.
+    env = {
+      ENABLE_PREFIX_DELEGATION = tostring(var.vpc_cni_enable_prefix_delegation)
+      WARM_PREFIX_TARGET       = "1"
+    }
   })
 
   tags = var.tags
@@ -290,6 +297,7 @@ resource "aws_eks_node_group" "system_on_demand" {
     min_size     = var.system_node_group_min_size
   }
 
+  ami_type       = var.node_ami_type
   instance_types = var.system_node_group_instance_types
 
   labels = merge(
@@ -300,10 +308,15 @@ resource "aws_eks_node_group" "system_on_demand" {
     }
   )
 
-  taint {
-    key    = var.system_taint_key
-    value  = var.system_taint_value
-    effect = var.system_taint_effect
+  # Only system add-ons (e.g. the load balancer controller) tolerate this taint.
+  # On small clusters disable it so the system node can also run app pods.
+  dynamic "taint" {
+    for_each = var.system_node_taint_enabled ? [1] : []
+    content {
+      key    = var.system_taint_key
+      value  = var.system_taint_value
+      effect = var.system_taint_effect
+    }
   }
 
   tags = merge(var.tags, {
@@ -314,6 +327,7 @@ resource "aws_eks_node_group" "system_on_demand" {
 
   depends_on = [
     aws_iam_role_policy_attachment.eks_node_policies,
+    aws_eks_addon.vpc_cni,
   ]
 }
 
@@ -332,6 +346,7 @@ resource "aws_eks_node_group" "app_spot" {
   }
 
   capacity_type = var.app_spot_capacity_type
+  ami_type      = var.node_ami_type
 
   instance_types = var.app_spot_node_group_instance_types
 
@@ -352,6 +367,7 @@ resource "aws_eks_node_group" "app_spot" {
 
   depends_on = [
     aws_iam_role_policy_attachment.eks_node_policies,
+    aws_eks_addon.vpc_cni,
   ]
 
   lifecycle {
@@ -375,6 +391,7 @@ resource "aws_eks_node_group" "app_on_demand" {
   }
 
   capacity_type  = "ON_DEMAND"
+  ami_type       = var.node_ami_type
   instance_types = var.app_on_demand_node_group_instance_types
 
   labels = {
@@ -390,6 +407,7 @@ resource "aws_eks_node_group" "app_on_demand" {
 
   depends_on = [
     aws_iam_role_policy_attachment.eks_node_policies,
+    aws_eks_addon.vpc_cni,
   ]
 
   lifecycle {

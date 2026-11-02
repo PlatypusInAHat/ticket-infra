@@ -95,6 +95,12 @@ variable "vpc_cni_enable_network_policy" {
   default     = true
 }
 
+variable "vpc_cni_enable_prefix_delegation" {
+  description = "Enable VPC CNI prefix delegation to raise the max pods per node."
+  type        = bool
+  default     = true
+}
+
 variable "vpc_cni_enable_policy_event_logs" {
   description = "Enable policy event logs for the VPC CNI network policy agent."
   type        = bool
@@ -281,10 +287,25 @@ variable "system_taint_value" {
   default     = "true"
 }
 
+variable "system_node_taint_enabled" {
+  description = "Taint the system node group so only pods tolerating it are scheduled there"
+  type        = bool
+  default     = true
+}
+
 variable "system_taint_effect" {
   description = "Taint effect for system nodes"
   type        = string
   default     = "NoSchedule"
+}
+
+# Node AMI Type
+# Must match the CPU architecture of the instance types (t4g/m7g are Graviton/ARM64)
+# and of the container images built by CI (linux/arm64 by default).
+variable "node_ami_type" {
+  description = "AMI type for all managed node groups"
+  type        = string
+  default     = "AL2023_ARM_64_STANDARD"
 }
 
 # Node Capacity Type
